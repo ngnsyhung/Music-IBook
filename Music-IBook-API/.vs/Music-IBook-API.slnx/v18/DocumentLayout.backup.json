@@ -1,0 +1,517 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\services\\lessonservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\services\\lessonservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\controllers\\lessonscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\controllers\\lessonscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\services\\istudentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\services\\istudentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\services\\ilessonservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\services\\ilessonservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\controllers\\studentcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\controllers\\studentcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\dtos\\savelessoncontentrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\dtos\\savelessoncontentrequest.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\models\\musicibookdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\models\\musicibookdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\dtos\\lessondto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\dtos\\lessondto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\music-ibook-api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\music-ibook-api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\migrations\\20260614153500_initialmusicibookdb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\migrations\\20260614153500_initialmusicibookdb.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\models\\lessonnote.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\models\\lessonnote.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\repositories\\repository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\repositories\\repository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\controllers\\basecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\controllers\\basecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\services\\studentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\services\\studentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\services\\iauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\services\\iauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\helpers\\jwthelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\helpers\\jwthelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\repositories\\irepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\repositories\\irepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\dtos\\studentdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\dtos\\studentdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\dtos\\authdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\dtos\\authdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\music-ibook-api.http||{5703B403-55E7-4C63-8C88-A8F52C7A45C5}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\music-ibook-api.http||{5703B403-55E7-4C63-8C88-A8F52C7A45C5}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\models\\studentnoteattempt.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\models\\studentnoteattempt.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\models\\practicesession.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\models\\practicesession.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\models\\studentlessonprogress.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\models\\studentlessonprogress.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\models\\practicesessiondetail.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\models\\practicesessiondetail.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\models\\musiclesson.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\models\\musiclesson.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\models\\passwordresettoken.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\models\\passwordresettoken.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|d:\\flutter\\music-ibook\\music-ibook-api\\music-ibook-api\\models\\appuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D86BF347-9F9F-EA04-AE09-2673E8832A4C}|Music-IBook-API\\Music-IBook-API.csproj|solutionrelative:music-ibook-api\\models\\appuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "SaveLessonContentRequest.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\DTOs\\SaveLessonContentRequest.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\DTOs\\SaveLessonContentRequest.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\DTOs\\SaveLessonContentRequest.cs",
+              "RelativeToolTip": "Music-IBook-API\\DTOs\\SaveLessonContentRequest.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-18T10:21:39.96Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "LessonService.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\LessonService.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Services\\LessonService.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\LessonService.cs",
+              "RelativeToolTip": "Music-IBook-API\\Services\\LessonService.cs",
+              "ViewState": "AgIAAIUAAAAAAAAAAAAcwGUAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:21:15.506Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "LessonsController.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Controllers\\LessonsController.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Controllers\\LessonsController.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Controllers\\LessonsController.cs",
+              "RelativeToolTip": "Music-IBook-API\\Controllers\\LessonsController.cs",
+              "ViewState": "AgIAAGYAAAAAAAAAAAA3wHUAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:23:25.483Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "ILessonService.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\ILessonService.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Services\\ILessonService.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\ILessonService.cs",
+              "RelativeToolTip": "Music-IBook-API\\Services\\ILessonService.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAABEAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:21:02.473Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "IStudentService.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\IStudentService.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Services\\IStudentService.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\IStudentService.cs",
+              "RelativeToolTip": "Music-IBook-API\\Services\\IStudentService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAABIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:22:13.303Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "StudentController.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Controllers\\StudentController.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Controllers\\StudentController.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Controllers\\StudentController.cs",
+              "RelativeToolTip": "Music-IBook-API\\Controllers\\StudentController.cs",
+              "ViewState": "AgIAABQAAAAAAAAAAAA6wDcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:23:41.902Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "MusicIBookDbContext.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\MusicIBookDbContext.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Models\\MusicIBookDbContext.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\MusicIBookDbContext.cs",
+              "RelativeToolTip": "Music-IBook-API\\Models\\MusicIBookDbContext.cs",
+              "ViewState": "AgIAACgAAAAAAAAAAAAkwDoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:45:48.432Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "LessonDto.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\DTOs\\LessonDto.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\DTOs\\LessonDto.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\DTOs\\LessonDto.cs",
+              "RelativeToolTip": "Music-IBook-API\\DTOs\\LessonDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:17:50.47Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Music-IBook-API.csproj",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Music-IBook-API.csproj",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Music-IBook-API.csproj",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Music-IBook-API.csproj",
+              "RelativeToolTip": "Music-IBook-API\\Music-IBook-API.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-06-14T14:46:18.938Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Program.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Program.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Program.cs",
+              "RelativeToolTip": "Music-IBook-API\\Program.cs",
+              "ViewState": "AgIAABYAAAAAAAAAAAAAAHsAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:02:10.172Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "20260614153500_InitialMusicIBookDb.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Migrations\\20260614153500_InitialMusicIBookDb.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Migrations\\20260614153500_InitialMusicIBookDb.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Migrations\\20260614153500_InitialMusicIBookDb.cs",
+              "RelativeToolTip": "Music-IBook-API\\Migrations\\20260614153500_InitialMusicIBookDb.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-18T10:01:12.639Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\appsettings.json",
+              "RelativeDocumentMoniker": "Music-IBook-API\\appsettings.json",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\appsettings.json",
+              "RelativeToolTip": "Music-IBook-API\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-06-14T15:01:17.954Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "LessonNote.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\LessonNote.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Models\\LessonNote.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\LessonNote.cs",
+              "RelativeToolTip": "Music-IBook-API\\Models\\LessonNote.cs",
+              "ViewState": "AgIAAAgAAAAAAAAAAAAqwBAAAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:44:12.273Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "Repository.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Repositories\\Repository.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Repositories\\Repository.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Repositories\\Repository.cs",
+              "RelativeToolTip": "Music-IBook-API\\Repositories\\Repository.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAAB8AAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:19:12.072Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Controllers\\AuthController.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Controllers\\AuthController.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Controllers\\AuthController.cs",
+              "RelativeToolTip": "Music-IBook-API\\Controllers\\AuthController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAaAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:23:08.062Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "AuthService.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\AuthService.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Services\\AuthService.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\AuthService.cs",
+              "RelativeToolTip": "Music-IBook-API\\Services\\AuthService.cs",
+              "ViewState": "AgIAAFIAAAAAAAAAAAAkwEsAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:20:38.121Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "BaseController.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Controllers\\BaseController.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Controllers\\BaseController.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Controllers\\BaseController.cs",
+              "RelativeToolTip": "Music-IBook-API\\Controllers\\BaseController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:22:50.609Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "StudentService.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\StudentService.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Services\\StudentService.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\StudentService.cs",
+              "RelativeToolTip": "Music-IBook-API\\Services\\StudentService.cs",
+              "ViewState": "AgIAABEAAAAAAAAAAAAiwH4AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:22:28.329Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "IAuthService.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\IAuthService.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Services\\IAuthService.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Services\\IAuthService.cs",
+              "RelativeToolTip": "Music-IBook-API\\Services\\IAuthService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:20:15.336Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "JwtHelper.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Helpers\\JwtHelper.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Helpers\\JwtHelper.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Helpers\\JwtHelper.cs",
+              "RelativeToolTip": "Music-IBook-API\\Helpers\\JwtHelper.cs",
+              "ViewState": "AgIAABUAAAAAAAAAAAAYwCsAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:19:39.17Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "IRepository.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Repositories\\IRepository.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Repositories\\IRepository.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Repositories\\IRepository.cs",
+              "RelativeToolTip": "Music-IBook-API\\Repositories\\IRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:18:49.469Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "StudentDto.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\DTOs\\StudentDto.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\DTOs\\StudentDto.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\DTOs\\StudentDto.cs",
+              "RelativeToolTip": "Music-IBook-API\\DTOs\\StudentDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:18:19.023Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "AuthDto.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\DTOs\\AuthDto.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\DTOs\\AuthDto.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\DTOs\\AuthDto.cs",
+              "RelativeToolTip": "Music-IBook-API\\DTOs\\AuthDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACAAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T15:17:28.424Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "Music-IBook-API.http",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Music-IBook-API.http",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Music-IBook-API.http",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Music-IBook-API.http",
+              "RelativeToolTip": "Music-IBook-API\\Music-IBook-API.http",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003502|",
+              "WhenOpened": "2026-06-14T15:04:18.103Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "StudentNoteAttempt.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\StudentNoteAttempt.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Models\\StudentNoteAttempt.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\StudentNoteAttempt.cs",
+              "RelativeToolTip": "Music-IBook-API\\Models\\StudentNoteAttempt.cs",
+              "ViewState": "AgIAABcAAAAAAAAAAAAUwB8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:51:29.536Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "PracticeSession.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\PracticeSession.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Models\\PracticeSession.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\PracticeSession.cs",
+              "RelativeToolTip": "Music-IBook-API\\Models\\PracticeSession.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAAwwBMAAABrAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:44:39.47Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "StudentLessonProgress.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\StudentLessonProgress.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Models\\StudentLessonProgress.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\StudentLessonProgress.cs",
+              "RelativeToolTip": "Music-IBook-API\\Models\\StudentLessonProgress.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:44:26.712Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "PracticeSessionDetail.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\PracticeSessionDetail.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Models\\PracticeSessionDetail.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\PracticeSessionDetail.cs",
+              "RelativeToolTip": "Music-IBook-API\\Models\\PracticeSessionDetail.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:44:54.298Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "MusicLesson.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\MusicLesson.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Models\\MusicLesson.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\MusicLesson.cs",
+              "RelativeToolTip": "Music-IBook-API\\Models\\MusicLesson.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAwwBkAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:44:00.383Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "PasswordResetToken.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\PasswordResetToken.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Models\\PasswordResetToken.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\PasswordResetToken.cs",
+              "RelativeToolTip": "Music-IBook-API\\Models\\PasswordResetToken.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:43:47.582Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "AppUser.cs",
+              "DocumentMoniker": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\AppUser.cs",
+              "RelativeDocumentMoniker": "Music-IBook-API\\Models\\AppUser.cs",
+              "ToolTip": "D:\\Flutter\\Music-IBook\\Music-IBook-API\\Music-IBook-API\\Models\\AppUser.cs",
+              "RelativeToolTip": "Music-IBook-API\\Models\\AppUser.cs",
+              "ViewState": "AgIAAAIAAAAAAAAAAAAxwA0AAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-14T14:43:26.131Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
