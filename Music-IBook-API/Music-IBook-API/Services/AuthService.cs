@@ -2,6 +2,8 @@
 using Music_IBook_API.Helpers;
 using Music_IBook_API.Models;
 using Music_IBook_API.Repositories;
+// Cần cài thêm package: Google.Apis.Auth để dùng thư viện dưới đây
+// using Google.Apis.Auth; 
 
 namespace Music_IBook_API.Services;
 
@@ -32,6 +34,7 @@ public class AuthService : IAuthService
             FullName = request.FullName,
             Email = request.Email,
             Role = request.Role,
+            AuthProvider = "Local", // Đảm bảo gán rõ nguồn
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
         };
 
@@ -50,8 +53,56 @@ public class AuthService : IAuthService
     {
         var user = await userRepo.FirstOrDefaultAsync(x => x.Email == request.Email);
 
+        // VÁ LỖI: Chặn user Google dùng form đăng nhập thường
+        if (user != null && user.AuthProvider == "Google" && string.IsNullOrEmpty(user.PasswordHash))
+            throw new Exception("Tài khoản này dùng Google. Vui lòng chọn 'Đăng nhập bằng Google'.");
+
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new Exception("Email hoặc mật khẩu không đúng");
+
+        return new AuthResponse
+        {
+            AccessToken = jwt.GenerateToken(user),
+            FullName = user.FullName,
+            Role = user.Role
+        };
+    }
+
+    public async Task<AuthResponse> GoogleLoginAsync(GoogleLoginRequest request)
+    {
+        // 1. Cài package Google.Apis.Auth và bật 3 dòng code này lên để verify Token thật từ Flutter gửi lên:
+        // var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
+        // var email = payload.Email;
+        // var name = payload.Name;
+        // var providerKey = payload.Subject;
+
+        // Dữ liệu Mock tạm thời để bạn test logic trước khi nối App Flutter:
+        var email = "test_google@gmail.com";
+        var name = "Google User";
+        var providerKey = "google_123456";
+
+        var user = await userRepo.FirstOrDefaultAsync(x => x.Email == email);
+
+        // Nếu user chưa từng đăng nhập -> Tạo mới
+        if (user == null)
+        {
+            user = new AppUser
+            {
+                FullName = name,
+                Email = email,
+                Role = "Student", // Mặc định Google Login là Student
+                PasswordHash = null,
+                AuthProvider = "Google",
+                ProviderKey = providerKey
+            };
+            await userRepo.AddAsync(user);
+            await userRepo.SaveChangesAsync();
+        }
+        else if (user.AuthProvider != "Google")
+        {
+            // Nếu email này đã đăng ký tay từ trước, báo lỗi để tránh xung đột
+            throw new Exception("Email này đã được sử dụng bằng tài khoản thường.");
+        }
 
         return new AuthResponse
         {
@@ -66,6 +117,10 @@ public class AuthService : IAuthService
         var user = await userRepo.FirstOrDefaultAsync(x => x.Email == request.Email);
         if (user == null)
             throw new Exception("Không tìm thấy email");
+
+        // VÁ LỖI: Chặn user Google xin cấp lại mật khẩu
+        if (user.AuthProvider == "Google")
+            throw new Exception("Tài khoản Google không thể đổi mật khẩu tại đây.");
 
         var resetToken = new PasswordResetToken
         {

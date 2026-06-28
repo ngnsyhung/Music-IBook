@@ -31,3 +31,8 @@ public class AuthResponse
     public string Role { get; set; } = "";
     public string FullName { get; set; } = "";
 }
+public class GoogleLoginRequest
+{
+    // Token mã hóa do Google trả về cho app Flutter
+    public string IdToken { get; set; } = "";
+}

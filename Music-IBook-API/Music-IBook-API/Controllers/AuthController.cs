@@ -18,28 +18,71 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
-        var result = await authService.RegisterAsync(request);
-        return Ok(result);
+        try
+        {
+            var result = await authService.RegisterAsync(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        var result = await authService.LoginAsync(request);
-        return Ok(result);
+        try
+        {
+            var result = await authService.LoginAsync(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // BỔ SUNG: Endpoint cho Google Login
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin(GoogleLoginRequest request)
+    {
+        try
+        {
+            var result = await authService.GoogleLoginAsync(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
     {
-        var token = await authService.ForgotPasswordAsync(request);
-        return Ok(new { resetToken = token });
+        try
+        {
+            var token = await authService.ForgotPasswordAsync(request);
+            return Ok(new { resetToken = token });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
     {
-        await authService.ResetPasswordAsync(request);
-        return Ok(new { message = "Đổi mật khẩu thành công" });
+        try
+        {
+            await authService.ResetPasswordAsync(request);
+            return Ok(new { message = "Đổi mật khẩu thành công" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

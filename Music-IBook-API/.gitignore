@@ -1,0 +1,13 @@
+# Bỏ qua các thư mục build
+bin/
+obj/
+
+# Bỏ qua thư mục và file tạm của Visual Studio
+.vs/
+*.user
+*.suo
+*.cache
+*.cache.json
+
+# Bỏ qua file cấu hình máy cá nhân
+project.nuget.cache
