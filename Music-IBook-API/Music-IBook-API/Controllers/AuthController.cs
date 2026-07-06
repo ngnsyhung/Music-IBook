@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Music_IBook_API.DTOs;
 using Music_IBook_API.Services;
 
@@ -37,6 +37,10 @@ public class AuthController : ControllerBase
             var result = await authService.LoginAsync(request);
             return Ok(result);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
@@ -51,6 +55,10 @@ public class AuthController : ControllerBase
         {
             var result = await authService.GoogleLoginAsync(request);
             return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {

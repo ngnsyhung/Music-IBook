@@ -1,9 +1,8 @@
-﻿using Music_IBook_API.DTOs;
+using Music_IBook_API.DTOs;
 using Music_IBook_API.Helpers;
 using Music_IBook_API.Models;
 using Music_IBook_API.Repositories;
-// Cần cài thêm package: Google.Apis.Auth để dùng thư viện dưới đây
-// using Google.Apis.Auth; 
+using Google.Apis.Auth;
 
 namespace Music_IBook_API.Services;
 
@@ -12,19 +11,47 @@ public class AuthService : IAuthService
     private readonly IRepository<AppUser> userRepo;
     private readonly IRepository<PasswordResetToken> tokenRepo;
     private readonly JwtHelper jwt;
+    private readonly IConfiguration config;
 
     public AuthService(
         IRepository<AppUser> userRepo,
         IRepository<PasswordResetToken> tokenRepo,
-        JwtHelper jwt)
+        JwtHelper jwt,
+        IConfiguration config)
     {
         this.userRepo = userRepo;
         this.tokenRepo = tokenRepo;
         this.jwt = jwt;
+        this.config = config;
     }
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+            throw new ArgumentException("Email không được để trống");
+
+        if (string.IsNullOrWhiteSpace(request.Password))
+            throw new ArgumentException("Mật khẩu không được để trống");
+
+        if (string.IsNullOrWhiteSpace(request.FullName))
+            throw new ArgumentException("Họ tên không được để trống");
+
+        if (string.Equals(request.Role, "Student", StringComparison.OrdinalIgnoreCase))
+        {
+            request.Role = "Student";
+        }
+        else if (string.Equals(request.Role, "Teacher", StringComparison.OrdinalIgnoreCase))
+        {
+            request.Role = "Teacher";
+        }
+        else
+        {
+            throw new ArgumentException("Vai trò không hợp lệ. Chỉ chấp nhận 'Student' hoặc 'Teacher'.");
+        }
+
         var existed = await userRepo.FirstOrDefaultAsync(x => x.Email == request.Email);
         if (existed != null)
             throw new Exception("Email đã tồn tại");
@@ -51,6 +78,12 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+            throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
+
         var user = await userRepo.FirstOrDefaultAsync(x => x.Email == request.Email);
 
         // VÁ LỖI: Chặn user Google dùng form đăng nhập thường
@@ -58,7 +91,7 @@ public class AuthService : IAuthService
             throw new Exception("Tài khoản này dùng Google. Vui lòng chọn 'Đăng nhập bằng Google'.");
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            throw new Exception("Email hoặc mật khẩu không đúng");
+            throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
 
         return new AuthResponse
         {
@@ -70,16 +103,32 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> GoogleLoginAsync(GoogleLoginRequest request)
     {
-        // 1. Cài package Google.Apis.Auth và bật 3 dòng code này lên để verify Token thật từ Flutter gửi lên:
-        // var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
-        // var email = payload.Email;
-        // var name = payload.Name;
-        // var providerKey = payload.Subject;
+        if (request == null || string.IsNullOrWhiteSpace(request.IdToken))
+            throw new ArgumentException("Token Google không hợp lệ");
 
-        // Dữ liệu Mock tạm thời để bạn test logic trước khi nối App Flutter:
-        var email = "test_google@gmail.com";
-        var name = "Google User";
-        var providerKey = "google_123456";
+        GoogleJsonWebSignature.Payload payload;
+        try
+        {
+            var googleClientId = config["Google:ClientId"];
+            if (string.IsNullOrWhiteSpace(googleClientId) || googleClientId == "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com")
+            {
+                throw new InvalidOperationException("Chưa cấu hình Google Client ID hợp lệ trong appsettings.json.");
+            }
+
+            var validationSettings = new GoogleJsonWebSignature.ValidationSettings
+            {
+                Audience = new[] { googleClientId }
+            };
+            payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, validationSettings);
+        }
+        catch (InvalidJwtException ex)
+        {
+            throw new UnauthorizedAccessException("Token Google không hợp lệ hoặc đã hết hạn", ex);
+        }
+
+        var email = payload.Email;
+        var name = payload.Name;
+        var providerKey = payload.Subject;
 
         var user = await userRepo.FirstOrDefaultAsync(x => x.Email == email);
 
@@ -114,6 +163,12 @@ public class AuthService : IAuthService
 
     public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request)
     {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+            throw new ArgumentException("Email không được để trống");
+
         var user = await userRepo.FirstOrDefaultAsync(x => x.Email == request.Email);
         if (user == null)
             throw new Exception("Không tìm thấy email");
@@ -138,6 +193,15 @@ public class AuthService : IAuthService
 
     public async Task ResetPasswordAsync(ResetPasswordRequest request)
     {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+
+        if (string.IsNullOrWhiteSpace(request.Token))
+            throw new ArgumentException("Token không được để trống");
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword))
+            throw new ArgumentException("Mật khẩu mới không được để trống");
+
         var token = await tokenRepo.FirstOrDefaultAsync(x =>
             x.Token == request.Token &&
             !x.IsUsed &&
