@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "music_ibook_flutter (Web Port 5021)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "music_ibook_flutter",
+      "program": "music_ibook_flutter/lib/main.dart",
+      "args": [
+        "--web-port",
+        "5021"
+      ]
+    }
+  ]
+}

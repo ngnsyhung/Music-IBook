@@ -123,7 +123,7 @@ public class AuthService : IAuthService
         }
         catch (InvalidJwtException ex)
         {
-            throw new UnauthorizedAccessException("Token Google không hợp lệ hoặc đã hết hạn", ex);
+            throw new UnauthorizedAccessException($"Token Google không hợp lệ hoặc đã hết hạn: {ex.Message}", ex);
         }
 
         var email = payload.Email;

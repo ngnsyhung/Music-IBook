@@ -1,8 +1,39 @@
+import 'package:google_sign_in/google_sign_in.dart';
 import '../core/api_client.dart';
+import '../core/api_config.dart';
 import '../models/auth_models.dart';
 
 class AuthService {
   final _dio = ApiClient.instance.dio;
+  final GoogleSignIn _googleSignIn;
+
+  AuthService({GoogleSignIn? googleSignIn})
+      : _googleSignIn = googleSignIn ?? GoogleSignIn(
+          clientId: ApiConfig.googleClientId,
+          scopes: ['email', 'profile', 'openid'],
+        );
+
+  Future<AuthResponse> loginWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        throw Exception("Đăng nhập bằng Google bị hủy");
+      }
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception("Không lấy được Google ID Token");
+      }
+
+      final res = await _dio.post('/api/auth/google-login', data: {
+        'idToken': idToken,
+      });
+      return AuthResponse.fromJson(res.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   Future<AuthResponse> login(String email, String password) async {
     final res = await _dio.post('/api/auth/login', data: {

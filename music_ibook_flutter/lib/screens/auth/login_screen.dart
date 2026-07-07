@@ -158,9 +158,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
                     BrutalistButton(
-                      onTap: () {
-                        print("Đang bấm Google...");
-                      },
+                      onTap: auth.loading
+                          ? () {}
+                          : () {
+                              auth.loginWithGoogle();
+                            },
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
