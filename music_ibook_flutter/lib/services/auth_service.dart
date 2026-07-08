@@ -9,7 +9,9 @@ class AuthService {
 
   AuthService({GoogleSignIn? googleSignIn})
       : _googleSignIn = googleSignIn ?? GoogleSignIn(
-          clientId: ApiConfig.googleClientId,
+          // serverClientId bắt buộc trên Android để nhận được idToken
+          // Dùng Web Client ID (client_type: 3) từ google-services.json
+          serverClientId: ApiConfig.googleWebClientId,
           scopes: ['email', 'profile', 'openid'],
         );
 

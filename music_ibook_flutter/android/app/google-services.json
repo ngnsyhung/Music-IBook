@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "638962679580",
+    "project_id": "music-ibook-app",
+    "storage_bucket": "music-ibook-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:638962679580:android:5515eace50c1248b3ec4d9",
+        "android_client_info": {
+          "package_name": "com.example.music_ibook_flutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "638962679580-c6ut2vm9dp6h5rm8bhvo23rl4hmqtvb6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.music_ibook_flutter",
+            "certificate_hash": "69f9a6d818a40b778c4e4eb753021caabdc577ba"
+          }
+        },
+        {
+          "client_id": "638962679580-5i797i08ere2hper6rtaooma332vfm4e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzPAOO_qItIuCsemyZ4r9B2Q2Kr3b7-g4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "638962679580-5i797i08ere2hper6rtaooma332vfm4e.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
