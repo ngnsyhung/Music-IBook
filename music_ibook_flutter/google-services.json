@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "446925808035",
+    "project_id": "music-b7b05",
+    "storage_bucket": "music-b7b05.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:446925808035:android:d6b2316124e8e72537ba16",
+        "android_client_info": {
+          "package_name": "com.company.music_ibook"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXI1FSbi944NDfiX_iDlI5_PJnnQTlW6c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

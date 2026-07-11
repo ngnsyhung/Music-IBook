@@ -1,7 +1,8 @@
-﻿using Music_IBook_API.DTOs;
+using Music_IBook_API.DTOs;
 using Music_IBook_API.Helpers;
 using Music_IBook_API.Models;
 using Music_IBook_API.Repositories;
+using Google.Apis.Auth;
 
 namespace Music_IBook_API.Services;
 
@@ -102,5 +103,64 @@ public class AuthService : IAuthService
         tokenRepo.Update(token);
 
         await userRepo.SaveChangesAsync();
+    }
+
+    public async Task<AuthResponse> GoogleLoginAsync(GoogleLoginRequest request)
+    {
+        try
+        {
+            var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
+            
+            var user = await userRepo.FirstOrDefaultAsync(x => x.Email == payload.Email);
+            
+            if (user == null)
+            {
+                // Register new user via Google
+                user = new AppUser
+                {
+                    FullName = payload.Name,
+                    Email = payload.Email,
+                    Role = request.Role, // Default or passed from frontend
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()) // random pass
+                };
+                await userRepo.AddAsync(user);
+                await userRepo.SaveChangesAsync();
+            }
+
+            return new AuthResponse
+            {
+                AccessToken = jwt.GenerateToken(user),
+                FullName = user.FullName,
+                Role = user.Role
+            };
+        }
+        catch (InvalidJwtException)
+        {
+            throw new Exception("Google token không hợp lệ");
+        }
+    }
+
+    public async Task<AuthResponse> UpdateProfileAsync(int userId, UpdateProfileRequest request)
+    {
+        var user = await userRepo.GetByIdAsync(userId);
+        if (user == null)
+            throw new Exception("Không tìm thấy người dùng");
+
+        user.FullName = request.FullName;
+        
+        if (!string.IsNullOrEmpty(request.NewPassword))
+        {
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        }
+
+        userRepo.Update(user);
+        await userRepo.SaveChangesAsync();
+
+        return new AuthResponse
+        {
+            AccessToken = jwt.GenerateToken(user),
+            FullName = user.FullName,
+            Role = user.Role
+        };
     }
 }

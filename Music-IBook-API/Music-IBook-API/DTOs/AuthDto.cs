@@ -1,4 +1,4 @@
-﻿namespace Music_IBook_API.DTOs;
+namespace Music_IBook_API.DTOs;
 
 public class RegisterRequest
 {
@@ -30,4 +30,16 @@ public class AuthResponse
     public string AccessToken { get; set; } = "";
     public string Role { get; set; } = "";
     public string FullName { get; set; } = "";
+}
+
+public class GoogleLoginRequest
+{
+    public string IdToken { get; set; } = "";
+    public string Role { get; set; } = "Student"; // Optional, default to Student for new users
+}
+
+public class UpdateProfileRequest
+{
+    public string FullName { get; set; } = "";
+    public string? NewPassword { get; set; }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Music_IBook_API.DTOs;
 using Music_IBook_API.Services;
 
@@ -41,5 +42,23 @@ public class AuthController : ControllerBase
     {
         await authService.ResetPasswordAsync(request);
         return Ok(new { message = "Đổi mật khẩu thành công" });
+    }
+
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin(GoogleLoginRequest request)
+    {
+        var result = await authService.GoogleLoginAsync(request);
+        return Ok(result);
+    }
+
+    [HttpPut("profile")]
+    [Authorize]
+    public async Task<IActionResult> UpdateProfile(UpdateProfileRequest request)
+    {
+        var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+        if (userId == 0) return Unauthorized();
+
+        var result = await authService.UpdateProfileAsync(userId, request);
+        return Ok(result);
     }
 }

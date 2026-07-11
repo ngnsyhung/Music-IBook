@@ -12,10 +12,10 @@ class NoteAttemptRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'lessonNoteId': lessonNoteId,
-        'playedNote': playedNote,
-        'playedAtSecond': playedSecond,
-      };
+    'lessonNoteId': lessonNoteId,
+    'playedNote': playedNote,
+    'playedAtSecond': playedSecond,
+  };
 }
 
 class PracticeSession {
