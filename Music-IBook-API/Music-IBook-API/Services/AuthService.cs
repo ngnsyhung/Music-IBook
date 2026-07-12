@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Music_IBook_API.DTOs;
 using Music_IBook_API.Helpers;
 using Music_IBook_API.Models;
@@ -8,6 +9,10 @@ namespace Music_IBook_API.Services;
 
 public class AuthService : IAuthService
 {
+    private static readonly Regex EmailRegex = new(
+        "^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$",
+        RegexOptions.Compiled);
+
     private readonly IRepository<AppUser> userRepo;
     private readonly IRepository<PasswordResetToken> tokenRepo;
     private readonly JwtHelper jwt;
@@ -25,6 +30,11 @@ public class AuthService : IAuthService
         this.config = config;
     }
 
+    private static bool IsValidEmail(string email)
+    {
+        return !string.IsNullOrWhiteSpace(email) && EmailRegex.IsMatch(email.Trim());
+    }
+
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
         if (request == null)
@@ -32,6 +42,9 @@ public class AuthService : IAuthService
 
         if (string.IsNullOrWhiteSpace(request.Email))
             throw new ArgumentException("Email không được để trống");
+
+        if (!IsValidEmail(request.Email))
+            throw new ArgumentException("Email không hợp lệ");
 
         if (string.IsNullOrWhiteSpace(request.Password))
             throw new ArgumentException("Mật khẩu không được để trống");
@@ -82,6 +95,9 @@ public class AuthService : IAuthService
             throw new ArgumentNullException(nameof(request));
 
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+            throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
+
+        if (!IsValidEmail(request.Email))
             throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
 
         var user = await userRepo.FirstOrDefaultAsync(x => x.Email == request.Email);
@@ -168,6 +184,9 @@ public class AuthService : IAuthService
 
         if (string.IsNullOrWhiteSpace(request.Email))
             throw new ArgumentException("Email không được để trống");
+
+        if (!IsValidEmail(request.Email))
+            throw new ArgumentException("Email không hợp lệ");
 
         var user = await userRepo.FirstOrDefaultAsync(x => x.Email == request.Email);
         if (user == null)

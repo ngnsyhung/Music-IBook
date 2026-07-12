@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../core/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/brutalist_elements.dart';
 
@@ -19,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final passwordController = TextEditingController();
   String role = 'Student';
   bool _obscurePassword = true;
+  String? _emailError;
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +114,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: emailController,
                       hint: "Enter your email",
                       icon: Icons.email,
+                      keyboardType: TextInputType.emailAddress,
                     ),
+                    if (_emailError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 16),
+                        child: Text(
+                          _emailError!,
+                          style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     const SizedBox(height: 24),
                     const Text(
                       "03 / SECURITY KEY",
@@ -169,12 +180,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 32),
                     BrutalistButton(
-                      onTap: () => auth.register(
-                        nameController.text,
-                        emailController.text,
-                        passwordController.text,
-                        role,
-                      ),
+                      onTap: auth.loading
+                          ? () {}
+                          : () async {
+                              setState(() {
+                                _emailError = null;
+                              });
+                              final email = emailController.text.trim();
+                              if (!Validators.isValidEmail(email)) {
+                                setState(() {
+                                  _emailError = 'Email không hợp lệ';
+                                });
+                                return;
+                              }
+                              final success = await auth.register(
+                                nameController.text,
+                                email,
+                                passwordController.text,
+                                role,
+                              );
+                              if (!mounted) return;
+                              if (success) {
+                                context.go(role == 'Teacher' ? '/teacher' : '/student');
+                              }
+                            },
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
