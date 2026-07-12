@@ -1,16 +1,28 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'core/app_router.dart';
+import 'core/error_handler.dart';
 import 'providers/auth_provider.dart';
 import 'providers/lesson_provider.dart';
 import 'providers/student_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/progress_provider.dart';
+import 'core/theme.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MusicIBookApp());
+  runZonedGuarded(
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
+      GlobalErrorHandler.init();
+      runApp(const MusicIBookApp());
+    },
+    (error, stack) {
+      // Unhandled async errors outside Flutter framework
+      debugPrint('Uncaught error in runZonedGuarded: $error');
+    },
+  );
 }
 
 class MusicIBookApp extends StatelessWidget {
@@ -30,9 +42,12 @@ class MusicIBookApp extends StatelessWidget {
         builder: (context, auth, _) {
           final router = buildRouter(auth);
           return MaterialApp.router(
+            scaffoldMessengerKey: globalMessengerKey,
             title: 'Music IBook',
             debugShowCheckedModeBanner: false,
-            theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.orange),
+            theme: MusicAppTheme.lightTheme,
+            darkTheme: MusicAppTheme.darkTheme,
+            themeMode: ThemeMode.system,
             routerConfig: router,
           );
         },

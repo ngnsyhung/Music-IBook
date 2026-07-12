@@ -63,9 +63,7 @@ class LessonService {
   }
 
   Future<void> deleteNote(int noteId) async {
-    await _dio.delete(
-      '/api/lessons/notes/$noteId',
-    );
+    await _dio.delete('/api/lessons/notes/$noteId');
   }
 
   Future<void> deleteAllNotes(int lessonId) async {

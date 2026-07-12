@@ -18,12 +18,15 @@ class StudentService {
     required int bestScore,
     required bool isCompleted,
   }) async {
-    await _dio.put('/api/student/progress/$lessonId', data: {
-      'lastPositionSecond': lastPositionSecond,
-      'completedNoteCount': completedNoteCount,
-      'bestScore': bestScore,
-      'isCompleted': isCompleted,
-    });
+    await _dio.put(
+      '/api/student/progress/$lessonId',
+      data: {
+        'lastPositionSecond': lastPositionSecond,
+        'completedNoteCount': completedNoteCount,
+        'bestScore': bestScore,
+        'isCompleted': isCompleted,
+      },
+    );
   }
 
   Future<PracticeSession> submitPractice({
@@ -32,12 +35,15 @@ class StudentService {
     required int durationSeconds,
     required List<NoteAttemptRequest> attempts,
   }) async {
-    final res = await _dio.post('/api/student/practice', data: {
-      'lessonId': lessonId,
-      'isExam': isExam,
-      'durationSeconds': durationSeconds,
-      'attempts': attempts.map((e) => e.toJson()).toList(),
-    });
+    final res = await _dio.post(
+      '/api/student/practice',
+      data: {
+        'lessonId': lessonId,
+        'isExam': isExam,
+        'durationSeconds': durationSeconds,
+        'attempts': attempts.map((e) => e.toJson()).toList(),
+      },
+    );
     return PracticeSession.fromJson(res.data);
   }
 

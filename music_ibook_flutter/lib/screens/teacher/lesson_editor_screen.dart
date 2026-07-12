@@ -12,10 +12,7 @@ import '../../widgets/music_staff.dart';
 class LessonEditorScreen extends StatefulWidget {
   final int? lessonId;
 
-  const LessonEditorScreen({
-    super.key,
-    this.lessonId,
-  });
+  const LessonEditorScreen({super.key, this.lessonId});
 
   @override
   State<LessonEditorScreen> createState() => _LessonEditorScreenState();
@@ -59,19 +56,9 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     'E5',
   ];
 
-  final keySignatures = [
-    'C Major',
-    'G Major',
-    'D Major',
-    'A Major',
-    'F Major',
-  ];
+  final keySignatures = ['C Major', 'G Major', 'D Major', 'A Major', 'F Major'];
 
-  final timeSignatures = [
-    '2/4',
-    '3/4',
-    '4/4',
-  ];
+  final timeSignatures = ['2/4', '3/4', '4/4'];
 
   @override
   void initState() {
@@ -101,8 +88,9 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
 
     if (widget.lessonId != null) {
       Future.microtask(() async {
-        final loaded =
-        await context.read<LessonProvider>().loadLesson(widget.lessonId!);
+        final loaded = await context.read<LessonProvider>().loadLesson(
+          widget.lessonId!,
+        );
 
         if (loaded != null) {
           setLesson(loaded);
@@ -146,9 +134,9 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
 
   void addNote() {
     if (lyric.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Hãy nhập lời hát cho nốt')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Hãy nhập lời hát cho nốt')));
       return;
     }
 
@@ -190,22 +178,19 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     }
 
     // INSERT LẠI TOÀN BỘ NOTE
-    final inserted =
-    await p.addNotesOneByOne(saved.id!, lesson.notes);
+    final inserted = await p.addNotesOneByOne(saved.id!, lesson.notes);
 
     if (!mounted) return;
 
     if (!inserted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(p.error ?? 'Lưu note thất bại')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(p.error ?? 'Lưu note thất bại')));
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã lưu và đồng bộ toàn bộ nốt nhạc'),
-      ),
+      const SnackBar(content: Text('Đã lưu và đồng bộ toàn bộ nốt nhạc')),
     );
   }
 
@@ -253,9 +238,9 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Đã upload nhạc nền: ${file.name}')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Đã upload nhạc nền: ${file.name}')));
   }
 
   Future<void> playPauseAudio() async {
@@ -278,9 +263,9 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Chưa có nhạc nền')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Chưa có nhạc nền')));
   }
 
   Future<void> seekAudio(double value) async {
@@ -317,34 +302,52 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     super.dispose();
   }
 
+  Widget _buildCard(String title, List<Widget> children) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<LessonProvider>();
-
     final totalSeconds = audioDuration.inMilliseconds == 0
         ? 1.0
         : audioDuration.inMilliseconds / 1000;
-
     final currentAudioSecond = audioPosition.inMilliseconds / 1000;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Soạn bài học'),
+        backgroundColor: Colors.transparent,
         actions: [
-          IconButton(
-            onPressed: saveAll,
-            icon: const Icon(Icons.save),
-          ),
+          IconButton(onPressed: saveAll, icon: const Icon(Icons.save)),
           IconButton(
             onPressed: () async {
               await saveAll();
-
               if (lesson.id == null) return;
-
               await provider.publish(lesson.id!);
-
               if (!mounted) return;
-
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Đã lưu nốt và xuất bản bài học')),
               );
@@ -353,229 +356,328 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Stack(
         children: [
-          TextField(
-            controller: title,
-            decoration: const InputDecoration(labelText: 'Tên bài'),
-          ),
-          TextField(
-            controller: composer,
-            decoration: const InputDecoration(labelText: 'Tác giả'),
-          ),
-          DropdownButtonFormField<String>(
-            value: lesson.keySignature,
-            items: keySignatures.map((e) {
-              return DropdownMenuItem(
-                value: e,
-                child: Text(e),
-              );
-            }).toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() => lesson.keySignature = v);
-            },
-            decoration: const InputDecoration(
-              labelText: 'Dấu hóa / Giọng',
+          // Background Watermark
+          Positioned(
+            top: 100,
+            right: -100,
+            child: Icon(
+              Icons.edit_document,
+              size: 300,
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.05),
             ),
           ),
-          DropdownButtonFormField<String>(
-            value: lesson.timeSignature,
-            items: timeSignatures.map((e) {
-              return DropdownMenuItem(
-                value: e,
-                child: Text(e),
-              );
-            }).toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() => lesson.timeSignature = v);
-            },
-            decoration: const InputDecoration(
-              labelText: 'Số chỉ nhịp',
-            ),
-          ),
-          const SizedBox(height: 16),
-          ExpansionTile(
-            title: const Text('Lý thuyết'),
-            initiallyExpanded: true,
+          ListView(
+            padding: const EdgeInsets.all(16),
             children: [
-              TextField(
-                controller: theoryTitle,
-                decoration: const InputDecoration(
-                  labelText: 'Tiêu đề lý thuyết',
-                ),
-              ),
-              TextField(
-                controller: theoryContent,
-                minLines: 4,
-                maxLines: 8,
-                decoration: const InputDecoration(
-                  labelText: 'Nội dung lý thuyết',
-                ),
-              ),
-              TextField(
-                controller: practiceGuide,
-                minLines: 2,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Hướng dẫn luyện tập',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: uploadAudio,
-            icon: const Icon(Icons.upload_file),
-            label: const Text('Upload nhạc nền'),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF6E6),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.brown),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Nhạc nền & chọn thời điểm',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+              _buildCard('Thông tin chung', [
+                TextField(
+                  controller: title,
+                  decoration: InputDecoration(
+                    labelText: 'Tên bài',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                if (selectedAudioFile != null)
-                  Text(
-                    'File đang chọn: ${selectedAudioFile!.name}',
-                    style: const TextStyle(fontSize: 12),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: composer,
+                  decoration: InputDecoration(
+                    labelText: 'Tác giả',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+                ),
+                const SizedBox(height: 12),
                 Row(
                   children: [
-                    IconButton.filled(
-                      onPressed: playPauseAudio,
-                      icon: Icon(
-                        isPlaying ? Icons.pause : Icons.play_arrow,
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: lesson.keySignature,
+                        items: keySignatures
+                            .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)),
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null)
+                            setState(() => lesson.keySignature = v);
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Dấu hóa',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text(formatTime(audioPosition)),
-                    const Spacer(),
-                    Text(formatTime(audioDuration)),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: lesson.timeSignature,
+                        items: timeSignatures
+                            .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)),
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null)
+                            setState(() => lesson.timeSignature = v);
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Số chỉ nhịp',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                Slider(
-                  value: currentAudioSecond.clamp(0, totalSeconds),
-                  min: 0,
-                  max: totalSeconds,
-                  onChanged: seekAudio,
+              ]),
+
+              _buildCard('Lý thuyết', [
+                TextField(
+                  controller: theoryTitle,
+                  decoration: InputDecoration(
+                    labelText: 'Tiêu đề lý thuyết',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
-                Text(
-                  'Giây đang chọn: ${second.toStringAsFixed(1)}s',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: theoryContent,
+                  minLines: 3,
+                  maxLines: 6,
+                  decoration: InputDecoration(
+                    labelText: 'Nội dung',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
-              ],
-            ),
-          ),
-          const Divider(height: 32),
-          Text(
-            'Giây thêm nốt: ${second.toStringAsFixed(1)}s',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          DropdownButtonFormField<String>(
-            value: note,
-            items: notes.map((e) {
-              return DropdownMenuItem(
-                value: e,
-                child: Text(e),
-              );
-            }).toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() => note = v);
-            },
-            decoration: const InputDecoration(labelText: 'Nốt'),
-          ),
-          DropdownButtonFormField<String>(
-            value: duration,
-            items: const [
-              DropdownMenuItem(
-                value: 'eighth',
-                child: Text('Nốt móc đơn'),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: practiceGuide,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: 'Hướng dẫn luyện tập',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ]),
+
+              _buildCard('Nhạc nền & Biên tập Nốt', [
+                ElevatedButton.icon(
+                  onPressed: uploadAudio,
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Upload nhạc nền'),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (selectedAudioFile != null)
+                        Text(
+                          'File đang chọn: ${selectedAudioFile!.name}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      Row(
+                        children: [
+                          IconButton.filled(
+                            onPressed: playPauseAudio,
+                            icon: Icon(
+                              isPlaying ? Icons.pause : Icons.play_arrow,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(formatTime(audioPosition)),
+                          const Spacer(),
+                          Text(formatTime(audioDuration)),
+                        ],
+                      ),
+                      Slider(
+                        value: currentAudioSecond.clamp(0, totalSeconds),
+                        min: 0,
+                        max: totalSeconds,
+                        onChanged: seekAudio,
+                      ),
+                      Text(
+                        'Giây đang chọn: ${second.toStringAsFixed(1)}s',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: note,
+                        items: notes
+                            .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)),
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) setState(() => note = v);
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Nốt',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: duration,
+                        items: const [
+                          DropdownMenuItem(value: 'eighth', child: Text('Đơn')),
+                          DropdownMenuItem(
+                            value: 'quarter',
+                            child: Text('Đen'),
+                          ),
+                          DropdownMenuItem(value: 'half', child: Text('Trắng')),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) setState(() => duration = v);
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Trường độ',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: chord,
+                        decoration: InputDecoration(
+                          labelText: 'Hợp âm',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: lyric,
+                        decoration: InputDecoration(
+                          labelText: 'Lời hát',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: ElevatedButton.icon(
+                    onPressed: addNote,
+                    icon: const Icon(Icons.add),
+                    label: Text('Thêm nốt tại ${second.toStringAsFixed(1)}s'),
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                  ),
+                ),
+              ]),
+
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Bản nhạc',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(height: 360, child: MusicStaff(lesson: lesson)),
+                    ],
+                  ),
+                ),
               ),
-              DropdownMenuItem(
-                value: 'quarter',
-                child: Text('Nốt đen'),
-              ),
-              DropdownMenuItem(
-                value: 'half',
-                child: Text('Nốt trắng'),
+
+              const SizedBox(height: 16),
+              ...lesson.notes.map(
+                (n) => Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      '${n.note} - ${n.lyric}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      '${n.second.toStringAsFixed(1)}s | ${n.duration} | ${n.chord}',
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.redAccent),
+                      onPressed: () async {
+                        if (n.id != null) {
+                          final ok = await context
+                              .read<LessonProvider>()
+                              .deleteNote(n.id!);
+                          if (!ok) return;
+                        }
+                        setState(() => lesson.notes.remove(n));
+                      },
+                    ),
+                    onTap: () => seekAudio(n.second),
+                  ),
+                ),
               ),
             ],
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() => duration = v);
-            },
-            decoration: const InputDecoration(labelText: 'Trường độ'),
-          ),
-          TextField(
-            controller: chord,
-            decoration: const InputDecoration(labelText: 'Hợp âm'),
-          ),
-          TextField(
-            controller: lyric,
-            decoration: const InputDecoration(labelText: 'Lời hát'),
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton.icon(
-            onPressed: addNote,
-            icon: const Icon(Icons.add),
-            label: Text(
-              'Thêm nốt tại ${second.toStringAsFixed(1)}s',
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 360,
-            child: MusicStaff(lesson: lesson),
-          ),
-          const SizedBox(height: 16),
-          ...lesson.notes.map(
-                (n) => Card(
-              child: ListTile(
-                title: Text('${n.note} - ${n.lyric}'),
-                subtitle: Text(
-                  '${n.second.toStringAsFixed(1)}s | ${n.duration} | ${n.chord}',
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () async {
-                    if (n.id != null) {
-                      final ok = await context
-                          .read<LessonProvider>()
-                          .deleteNote(n.id!);
-
-                      if (!ok) return;
-                    }
-
-                    setState(() {
-                      lesson.notes.remove(n);
-                    });
-                  },
-                ),
-                onTap: () {
-                  seekAudio(n.second);
-                },
-              ),
-            ),
           ),
         ],
       ),

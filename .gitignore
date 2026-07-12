@@ -1,0 +1,29 @@
+# C# and .NET ignores
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+.vs/
+
+# JetBrains IDEs (Rider, WebStorm, IntelliJ, etc)
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+$RECYCLE.BIN/

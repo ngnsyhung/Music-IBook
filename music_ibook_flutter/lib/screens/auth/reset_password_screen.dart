@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
@@ -5,6 +7,7 @@ import '../../widgets/brutalist_elements.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String token;
+
   const ResetPasswordScreen({super.key, required this.token});
 
   @override
@@ -15,6 +18,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   late final tokenController = TextEditingController(text: widget.token);
   final passwordController = TextEditingController();
   bool _obscurePassword = true;
+
+  bool loading = false;
+  bool hidePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -134,6 +140,36 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _textField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+  }) {
+    return TextField(
+      controller: controller,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white54),
+        prefixIcon: Icon(icon, color: Colors.white70),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: .08),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _circle(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

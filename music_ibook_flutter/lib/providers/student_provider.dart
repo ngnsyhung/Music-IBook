@@ -38,14 +38,14 @@ class StudentProvider extends ChangeNotifier {
   }
 
   Future<PracticeSession?> submitPractice(
-    int lessonId, 
+    int lessonId,
     List<NoteAttemptRequest> attempts, {
     required bool isExam,
     required int durationSeconds,
   }) async {
     try {
       final result = await _service.submitPractice(
-        lessonId: lessonId, 
+        lessonId: lessonId,
         attempts: attempts,
         isExam: isExam,
         durationSeconds: durationSeconds,
