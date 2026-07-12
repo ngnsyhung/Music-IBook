@@ -24,6 +24,8 @@ namespace Music_IBook_API.Models
 
         public bool IsCorrect { get; set; }
 
+        public string JudgeResult { get; set; } = ""; // PERFECT, GOOD, LATE, WRONG, MISS
+
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
         public PracticeSession PracticeSession { get; set; } = null!;

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Music_IBook_API.Models;
 
@@ -11,9 +12,11 @@ using Music_IBook_API.Models;
 namespace Music_IBook_API.Migrations
 {
     [DbContext(typeof(MusicIBookDbContext))]
-    partial class MusicIBookDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260712033722_AddJudgeResultToAttempt")]
+    partial class AddJudgeResultToAttempt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,10 +33,6 @@ namespace Music_IBook_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("AuthProvider")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -46,9 +45,7 @@ namespace Music_IBook_API.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProviderKey")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Role")
@@ -400,7 +397,7 @@ namespace Music_IBook_API.Migrations
             modelBuilder.Entity("Music_IBook_API.Models.PasswordResetToken", b =>
                 {
                     b.HasOne("Music_IBook_API.Models.AppUser", "User")
-                        .WithMany("PasswordResetTokens")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -487,8 +484,6 @@ namespace Music_IBook_API.Migrations
             modelBuilder.Entity("Music_IBook_API.Models.AppUser", b =>
                 {
                     b.Navigation("LessonsCreated");
-
-                    b.Navigation("PasswordResetTokens");
 
                     b.Navigation("Progresses");
                 });

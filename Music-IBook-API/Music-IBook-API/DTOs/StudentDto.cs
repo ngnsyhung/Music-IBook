@@ -21,4 +21,6 @@ public class SubmitNoteAttemptRequest
     public long LessonNoteId { get; set; }
     public string PlayedNote { get; set; } = "";
     public double PlayedAtSecond { get; set; }
+    public string JudgeResult { get; set; } = ""; // PERFECT, GOOD, LATE, WRONG, MISS
+    public double TimingErrorMs { get; set; }
 }

@@ -45,3 +45,13 @@ app.*.map.json
 /android/app/release
 
 **/google-services.json
+# Generated Plugin Registrants
+**/ios/Flutter/GeneratedPluginRegistrant.m
+**/ios/Flutter/GeneratedPluginRegistrant.h
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/windows/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugin_registrant.h
+
+# Flutter Plugins
+.flutter-plugins
