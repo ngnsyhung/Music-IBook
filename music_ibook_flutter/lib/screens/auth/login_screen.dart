@@ -1,7 +1,9 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../core/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/brutalist_elements.dart';
 
@@ -16,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String? _emailError;
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +103,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _emailController,
                       hint: "Enter email",
                       icon: Icons.email,
+                      keyboardType: TextInputType.emailAddress,
                     ),
+                    if (_emailError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 16),
+                        child: Text(
+                          _emailError!,
+                          style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     const SizedBox(height: 24),
                     const Text(
                       "02 / SECURITY KEY",
@@ -124,7 +136,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       onTap: auth.loading
                           ? () {}
                           : () {
-                              auth.login(_emailController.text, _passwordController.text);
+                              setState(() {
+                                _emailError = null;
+                              });
+                              final email = _emailController.text.trim();
+                              if (!Validators.isValidEmail(email)) {
+                                setState(() {
+                                  _emailError = 'Email không hợp lệ';
+                                });
+                                return;
+                              }
+                              auth.login(email, _passwordController.text);
                             },
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -144,7 +166,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: TextButton(
+                        onPressed: auth.loading ? null : () => context.go('/register'),
+                        child: const Text(
+                          "CREATE NEW ACCOUNT",
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
                     const Row(
                       children: [
                         Expanded(child: Divider(color: Colors.black, thickness: 1.5)),

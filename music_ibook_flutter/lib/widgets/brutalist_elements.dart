@@ -56,6 +56,7 @@ class BrutalistInput extends StatelessWidget {
   final bool isPassword;
   final bool obscureText;
   final VoidCallback? onToggle;
+  final TextInputType keyboardType;
 
   const BrutalistInput({
     super.key,
@@ -65,6 +66,7 @@ class BrutalistInput extends StatelessWidget {
     this.isPassword = false,
     this.obscureText = false,
     this.onToggle,
+    this.keyboardType = TextInputType.text,
   });
 
   @override
@@ -84,6 +86,12 @@ class BrutalistInput extends StatelessWidget {
       child: TextField(
         controller: controller,
         obscureText: obscureText,
+        keyboardType: keyboardType,
+        textCapitalization: keyboardType == TextInputType.emailAddress
+            ? TextCapitalization.none
+            : TextCapitalization.sentences,
+        autocorrect: keyboardType != TextInputType.emailAddress,
+        enableSuggestions: keyboardType != TextInputType.emailAddress,
         style: const TextStyle(fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: hint,

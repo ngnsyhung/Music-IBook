@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/validators.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/brutalist_elements.dart';
 
@@ -15,6 +16,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final emailController = TextEditingController();
   String result = '';
+  String? _emailError;
 
   @override
   Widget build(BuildContext context) {
@@ -85,11 +87,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       controller: emailController,
                       hint: "Enter registered email",
                       icon: Icons.email,
+                      keyboardType: TextInputType.emailAddress,
                     ),
+                    if (_emailError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 16),
+                        child: Text(
+                          _emailError!,
+                          style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     const SizedBox(height: 32),
                     BrutalistButton(
                       onTap: () async {
-                        final token = await AuthService().forgotPassword(emailController.text);
+                        setState(() {
+                          _emailError = null;
+                          result = '';
+                        });
+                        final email = emailController.text.trim();
+                        if (!Validators.isValidEmail(email)) {
+                          setState(() {
+                            _emailError = 'Email không hợp lệ';
+                          });
+                          return;
+                        }
+                        final token = await AuthService().forgotPassword(email);
                         setState(() => result = token);
                       },
                       child: const Row(
