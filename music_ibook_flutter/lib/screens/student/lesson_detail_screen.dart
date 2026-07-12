@@ -27,6 +27,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   Widget build(BuildContext context) {
     final lesson = context.watch<LessonProvider>().current;
     final colorScheme = Theme.of(context).colorScheme;
+    final isSmallScreen = MediaQuery.of(context).size.height < 500;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -48,6 +49,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           : _BottomDock(
               onPractice: () => context.push('/student/practice/${lesson.id}'),
               onExam: () => context.push('/student/exam/${lesson.id}'),
+              isSmallScreen: isSmallScreen,
             ),
       body: lesson == null
           ? const Center(child: CircularProgressIndicator())
@@ -55,7 +57,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
               children: [
                 // Gradient background behind everything
                 Container(
-                  height: 280,
+                  height: isSmallScreen ? 170 : 280,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -101,12 +103,13 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                       const SizedBox(height: kToolbarHeight - 8),
 
                       // Lesson info card
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                        child: _LessonInfoCard(lesson: lesson),
-                      ),
+                      if (!isSmallScreen)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                          child: _LessonInfoCard(lesson: lesson),
+                        ),
 
-                      const SizedBox(height: 12),
+                      if (!isSmallScreen) const SizedBox(height: 12),
 
                       // Content area with pill TabBar
                       Expanded(
@@ -399,16 +402,17 @@ class _SectionCard extends StatelessWidget {
 class _BottomDock extends StatelessWidget {
   final VoidCallback onPractice;
   final VoidCallback onExam;
+  final bool isSmallScreen;
 
-  const _BottomDock({required this.onPractice, required this.onExam});
+  const _BottomDock({required this.onPractice, required this.onExam, this.isSmallScreen = false});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
-      padding: const EdgeInsets.all(10),
+      margin: EdgeInsets.only(left: 16, right: 16, bottom: isSmallScreen ? 4 : 8),
+      padding: EdgeInsets.all(isSmallScreen ? 6 : 10),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(32),
@@ -429,6 +433,7 @@ class _BottomDock extends StatelessWidget {
               icon: Icons.piano,
               color: colorScheme.primary,
               onPressed: onPractice,
+              isSmallScreen: isSmallScreen,
             ),
           ),
           const SizedBox(width: 8),
@@ -438,6 +443,7 @@ class _BottomDock extends StatelessWidget {
               icon: Icons.quiz,
               color: colorScheme.secondary,
               onPressed: onExam,
+              isSmallScreen: isSmallScreen,
             ),
           ),
         ],
@@ -451,28 +457,30 @@ class _DockButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onPressed;
+  final bool isSmallScreen;
 
   const _DockButton({
     required this.label,
     required this.icon,
     required this.color,
     required this.onPressed,
+    this.isSmallScreen = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 22),
+      icon: Icon(icon, size: isSmallScreen ? 20 : 22),
       label: Text(
         label,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: isSmallScreen ? 14 : 15),
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10 : 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(isSmallScreen ? 20 : 24)),
         elevation: 4,
         shadowColor: color.withValues(alpha: 0.5),
       ),

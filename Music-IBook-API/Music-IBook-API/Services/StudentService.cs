@@ -76,23 +76,47 @@ public class StudentService : IStudentService
 
         int correct = 0;
         int wrong = 0;
+        int totalScore = 0;
 
         foreach (var attempt in request.Attempts)
         {
             var expected = lessonNotes.FirstOrDefault(x => x.Id == attempt.LessonNoteId);
             if (expected == null) continue;
 
-            var offsetMs = Math.Abs((attempt.PlayedAtSecond - expected.Second) * 1000);
+            // Ưu tiên dùng JudgeResult từ client nếu có, fallback tính lại nếu thiếu
+            var judgeResult = attempt.JudgeResult;
+            if (string.IsNullOrEmpty(judgeResult))
+            {
+                var offsetMs = Math.Abs((attempt.PlayedAtSecond - expected.Second) * 1000);
+                var correctPitch = attempt.PlayedNote == expected.Note;
+                if (!correctPitch) judgeResult = "WRONG";
+                else if (offsetMs < 100) judgeResult = "PERFECT";
+                else if (offsetMs < 200) judgeResult = "GOOD";
+                else if (offsetMs < 500) judgeResult = "LATE";
+                else judgeResult = "MISS";
+            }
 
-            var correctPitch = attempt.PlayedNote == expected.Note;
-            var correctTiming = request.IsExam ? offsetMs <= 300 : true; // In practice mode, timing might not be strict or just always correct if they hit it? Let's use same logic but maybe exam is stricter. User said Exam <= 0.3s. For practice, we will use <= 300 as well for correctTiming but we don't penalize score if they wait. Wait, in practice "1.5, 1.4... 0 thì phải đánh". That means they wait for 0. So let's keep offsetMs <= 300.
-            var isCorrect = correctPitch && (request.IsExam ? correctTiming : true); // In practice mode they might take longer, but if they hit the right note it's correct? Let's say in practice mode, as long as it's the right note, it's correct? User said "Khi học sinh bấm phím: So sánh với lesson.notes[currentIndex], Nếu đúng: Tăng correct count". It doesn't mention timing strictly for practice, only for exam. So I will just require correctPitch for Practice, and both for Exam.
-            
-            // Revert the logic comment block and simplify:
-            isCorrect = request.IsExam ? (correctPitch && correctTiming) : correctPitch;
+            // Tính điểm theo JudgeResult
+            int noteScore = judgeResult switch
+            {
+                "PERFECT" => 10,
+                "GOOD"    => 8,
+                "LATE"    => 5,
+                "WRONG"   => -5,
+                "MISS"    => -10,
+                _         => 0
+            };
 
+            totalScore += noteScore;
+
+            var isCorrect = judgeResult == "PERFECT" || judgeResult == "GOOD" || judgeResult == "LATE";
             if (isCorrect) correct++;
             else wrong++;
+
+            var correctPitchFinal = attempt.PlayedNote == expected.Note;
+            var timingErrorMs = string.IsNullOrEmpty(attempt.JudgeResult)
+                ? Math.Abs((attempt.PlayedAtSecond - expected.Second) * 1000)
+                : attempt.TimingErrorMs;
 
             db.StudentNoteAttempts.Add(new StudentNoteAttempt
             {
@@ -102,10 +126,11 @@ public class StudentService : IStudentService
                 PlayedNote = attempt.PlayedNote,
                 ExpectedAtSecond = expected.Second,
                 PlayedAtSecond = attempt.PlayedAtSecond,
-                TimingErrorMs = offsetMs,
-                IsCorrectPitch = correctPitch,
-                IsCorrectTiming = correctTiming,
+                TimingErrorMs = timingErrorMs,
+                IsCorrectPitch = correctPitchFinal,
+                IsCorrectTiming = judgeResult is "PERFECT" or "GOOD" or "LATE",
                 IsCorrect = isCorrect,
+                JudgeResult = judgeResult,
                 CreatedAtUtc = DateTime.UtcNow
             });
         }
@@ -115,7 +140,8 @@ public class StudentService : IStudentService
         session.CorrectCount = correct;
         session.WrongCount = wrong;
         session.Accuracy = total == 0 ? 0 : Math.Round((double)correct / total * 100, 2);
-        session.Score = correct * 10;
+        // Điểm tối đa = số nốt * 10, không âm
+        session.Score = Math.Max(0, totalScore);
 
         await db.SaveChangesAsync();
 

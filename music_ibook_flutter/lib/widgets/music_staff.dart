@@ -9,6 +9,8 @@ class MusicStaff extends StatefulWidget {
   final int? highlightIndex;
   final double? countdownSeconds;
   final bool wasCorrect;
+  final ValueNotifier<double>? elapsedNotifier;
+  final bool showTimeline;
 
   const MusicStaff({
     super.key,
@@ -16,6 +18,8 @@ class MusicStaff extends StatefulWidget {
     this.highlightIndex,
     this.countdownSeconds,
     this.wasCorrect = false,
+    this.elapsedNotifier,
+    this.showTimeline = false,
   });
 
   @override
@@ -23,7 +27,6 @@ class MusicStaff extends StatefulWidget {
 }
 
 class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
-  final ScrollController _horizontalController = ScrollController();
   final ScrollController _verticalController = ScrollController();
   late final AnimationController _glowController;
   late final Animation<double> _glowAnim;
@@ -51,7 +54,6 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _horizontalController.dispose();
     _verticalController.dispose();
     _glowController.dispose();
     super.dispose();
@@ -63,54 +65,21 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
     final i = widget.highlightIndex!;
     const perLine = 12;
     final line = i ~/ perLine;
-    final local = i % perLine;
     
     const top0 = 150.0;
     const systemGap = 110.0;
-    const left = 70.0;
     
-    final x = left + 155 + local * 78;
     final top = top0 + line * systemGap;
     
-    final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final orientation = MediaQuery.of(context).orientation;
     
-    if (orientation == Orientation.portrait) {
-      // Horizontal scroll
-      double targetX = x - (screenWidth / 2);
-      if (targetX < 0) targetX = 0;
-      if (_horizontalController.hasClients) {
-        final maxScrollX = _horizontalController.position.maxScrollExtent;
-        if (targetX > maxScrollX) targetX = maxScrollX;
-        _horizontalController.animateTo(targetX, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      }
-      
-      // Vertical scroll
-      double targetY = top - (screenHeight / 3);
-      if (targetY < 0) targetY = 0;
-      if (_verticalController.hasClients) {
-        final maxScrollY = _verticalController.position.maxScrollExtent;
-        if (targetY > maxScrollY) targetY = maxScrollY;
-        _verticalController.animateTo(targetY, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      }
-    } else {
-      // Landscape scroll
-      double targetY = top - 60;
-      if (targetY < 0) targetY = 0;
-      if (_verticalController.hasClients) {
-        final maxScrollY = _verticalController.position.maxScrollExtent;
-        if (targetY > maxScrollY) targetY = maxScrollY;
-        _verticalController.animateTo(targetY, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      }
-      
-      double targetX = x - (screenWidth / 2);
-      if (targetX < 0) targetX = 0;
-      if (_horizontalController.hasClients) {
-        final maxScrollX = _horizontalController.position.maxScrollExtent;
-        if (targetX > maxScrollX) targetX = maxScrollX;
-        _horizontalController.animateTo(targetX, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      }
+    // Vertical scroll only, since horizontal is scaled to fit
+    double targetY = top - (screenHeight / 3);
+    if (targetY < 0) targetY = 0;
+    if (_verticalController.hasClients) {
+      final maxScrollY = _verticalController.position.maxScrollExtent;
+      if (targetY > maxScrollY) targetY = maxScrollY;
+      _verticalController.animateTo(targetY, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
   }
 
@@ -128,20 +97,25 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
           return SingleChildScrollView(
             controller: _verticalController,
             scrollDirection: Axis.vertical,
-            child: SingleChildScrollView(
-              controller: _horizontalController,
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: 1250,
-                height: max(constraints.maxHeight, contentHeight),
-                child: AnimatedBuilder(
-                  animation: _glowAnim,
-                  builder: (context, _) => CustomPaint(
-                    painter: MusicSheetPainter(
-                      widget.lesson,
-                      widget.highlightIndex,
-                      widget.countdownSeconds,
-                      _glowAnim.value,
+            child: SizedBox(
+              width: constraints.maxWidth,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: 1250,
+                  height: max(constraints.maxHeight, contentHeight),
+                  child: AnimatedBuilder(
+                    animation: _glowAnim,
+                    builder: (context, _) => CustomPaint(
+                      painter: MusicSheetPainter(
+                        widget.lesson,
+                        widget.highlightIndex,
+                        widget.countdownSeconds,
+                        _glowAnim.value,
+                        widget.elapsedNotifier,
+                        widget.showTimeline,
+                      ),
                     ),
                   ),
                 ),
@@ -159,8 +133,17 @@ class MusicSheetPainter extends CustomPainter {
   final int? highlightIndex;
   final double? countdownSeconds;
   final double glowProgress;
+  final ValueNotifier<double>? elapsedNotifier;
+  final bool showTimeline;
 
-  MusicSheetPainter(this.lesson, this.highlightIndex, this.countdownSeconds, [this.glowProgress = 0.5]);
+  MusicSheetPainter(
+    this.lesson, 
+    this.highlightIndex, 
+    this.countdownSeconds, 
+    [this.glowProgress = 0.5, 
+     this.elapsedNotifier, 
+     this.showTimeline = false]
+  ) : super(repaint: elapsedNotifier);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -278,6 +261,76 @@ class MusicSheetPainter extends CustomPainter {
         linePaint,
       );
     }
+
+    if (showTimeline && elapsedNotifier != null) {
+      _drawTimeline(canvas, elapsedNotifier!.value, gap, left, perLine);
+    }
+  }
+
+  void _drawTimeline(Canvas canvas, double elapsed, double gap, double left, int perLine) {
+    if (lesson.notes.isEmpty) return;
+
+    int idx = 0;
+    while (idx < lesson.notes.length && lesson.notes[idx].second <= elapsed) {
+      idx++;
+    }
+    
+    double x = left + 155; 
+    int line = 0;
+
+    if (idx == 0) {
+      double t1 = lesson.notes[0].second;
+      double p = t1 > 0 ? (elapsed / t1).clamp(0.0, 1.0) : 1.0;
+      x = left + 80 + p * 75; 
+      line = 0;
+    } else if (idx == lesson.notes.length) {
+      int lastIdx = lesson.notes.length - 1;
+      int local = lastIdx % perLine;
+      line = lastIdx ~/ perLine;
+      double t0 = lesson.notes[lastIdx].second;
+      double diff = elapsed - t0;
+      x = left + 155 + local * 78 + diff * 78;
+    } else {
+      double t0 = lesson.notes[idx-1].second;
+      double t1 = lesson.notes[idx].second;
+      double p = (elapsed - t0) / (t1 - t0);
+      
+      int local0 = (idx - 1) % perLine;
+      int local1 = idx % perLine;
+      line = (idx - 1) ~/ perLine;
+      
+      if (line == idx ~/ perLine) {
+        double x0 = left + 155 + local0 * 78;
+        double x1 = left + 155 + local1 * 78;
+        x = x0 + (x1 - x0) * p;
+      } else {
+        if (p < 0.5) {
+          double x0 = left + 155 + local0 * 78;
+          double x1 = left + 155 + perLine * 78;
+          x = x0 + (x1 - x0) * (p * 2);
+        } else {
+          line = idx ~/ perLine;
+          double x0 = left + 80;
+          double x1 = left + 155 + local1 * 78;
+          x = x0 + (x1 - x0) * ((p - 0.5) * 2);
+        }
+      }
+    }
+    
+    final top = 150.0 + line * 110.0;
+    
+    final glowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.2)
+      ..strokeWidth = 6.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0)
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(x, top - gap), Offset(x, top + gap * 5), glowPaint);
+
+    final linePaint = Paint()
+      ..color = Colors.black87
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(x, top - gap), Offset(x, top + gap * 5), linePaint);
   }
 
   void _keySignature(

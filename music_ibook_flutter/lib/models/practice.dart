@@ -4,17 +4,23 @@ class NoteAttemptRequest {
   final int lessonNoteId;
   final String playedNote;
   final double playedSecond;
+  final String judgeResult;
+  final double timingErrorMs;
 
   NoteAttemptRequest({
     required this.lessonNoteId,
     required this.playedNote,
     required this.playedSecond,
+    this.judgeResult = '',
+    this.timingErrorMs = 0,
   });
 
   Map<String, dynamic> toJson() => {
     'lessonNoteId': lessonNoteId,
     'playedNote': playedNote,
     'playedAtSecond': playedSecond,
+    'judgeResult': judgeResult,
+    'timingErrorMs': timingErrorMs,
   };
 }
 
