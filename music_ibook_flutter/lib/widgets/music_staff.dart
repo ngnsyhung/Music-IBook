@@ -9,6 +9,8 @@ class MusicStaff extends StatefulWidget {
   final int? highlightIndex;
   final double? countdownSeconds;
   final bool wasCorrect;
+  final ValueNotifier<double>? elapsedNotifier;
+  final bool showTimeline;
 
   const MusicStaff({
     super.key,
@@ -16,6 +18,8 @@ class MusicStaff extends StatefulWidget {
     this.highlightIndex,
     this.countdownSeconds,
     this.wasCorrect = false,
+    this.elapsedNotifier,
+    this.showTimeline = false,
   });
 
   @override
@@ -23,7 +27,6 @@ class MusicStaff extends StatefulWidget {
 }
 
 class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
-  final ScrollController _horizontalController = ScrollController();
   final ScrollController _verticalController = ScrollController();
   late final AnimationController _glowController;
   late final Animation<double> _glowAnim;
@@ -51,7 +54,6 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _horizontalController.dispose();
     _verticalController.dispose();
     _glowController.dispose();
     super.dispose();
@@ -63,54 +65,21 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
     final i = widget.highlightIndex!;
     const perLine = 12;
     final line = i ~/ perLine;
-    final local = i % perLine;
     
     const top0 = 150.0;
     const systemGap = 110.0;
-    const left = 70.0;
     
-    final x = left + 155 + local * 78;
     final top = top0 + line * systemGap;
     
-    final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final orientation = MediaQuery.of(context).orientation;
     
-    if (orientation == Orientation.portrait) {
-      // Horizontal scroll
-      double targetX = x - (screenWidth / 2);
-      if (targetX < 0) targetX = 0;
-      if (_horizontalController.hasClients) {
-        final maxScrollX = _horizontalController.position.maxScrollExtent;
-        if (targetX > maxScrollX) targetX = maxScrollX;
-        _horizontalController.animateTo(targetX, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      }
-      
-      // Vertical scroll
-      double targetY = top - (screenHeight / 3);
-      if (targetY < 0) targetY = 0;
-      if (_verticalController.hasClients) {
-        final maxScrollY = _verticalController.position.maxScrollExtent;
-        if (targetY > maxScrollY) targetY = maxScrollY;
-        _verticalController.animateTo(targetY, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      }
-    } else {
-      // Landscape scroll
-      double targetY = top - 60;
-      if (targetY < 0) targetY = 0;
-      if (_verticalController.hasClients) {
-        final maxScrollY = _verticalController.position.maxScrollExtent;
-        if (targetY > maxScrollY) targetY = maxScrollY;
-        _verticalController.animateTo(targetY, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      }
-      
-      double targetX = x - (screenWidth / 2);
-      if (targetX < 0) targetX = 0;
-      if (_horizontalController.hasClients) {
-        final maxScrollX = _horizontalController.position.maxScrollExtent;
-        if (targetX > maxScrollX) targetX = maxScrollX;
-        _horizontalController.animateTo(targetX, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      }
+    // Vertical scroll only, since horizontal is scaled to fit
+    double targetY = top - (screenHeight / 3);
+    if (targetY < 0) targetY = 0;
+    if (_verticalController.hasClients) {
+      final maxScrollY = _verticalController.position.maxScrollExtent;
+      if (targetY > maxScrollY) targetY = maxScrollY;
+      _verticalController.animateTo(targetY, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
   }
 
@@ -128,21 +97,40 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
           return SingleChildScrollView(
             controller: _verticalController,
             scrollDirection: Axis.vertical,
-            child: SingleChildScrollView(
-              controller: _horizontalController,
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: 1250,
-                height: max(constraints.maxHeight, contentHeight),
-                child: AnimatedBuilder(
-                  animation: _glowAnim,
-                  builder: (context, _) => CustomPaint(
-                    painter: MusicSheetPainter(
-                      widget.lesson,
-                      widget.highlightIndex,
-                      widget.countdownSeconds,
-                      _glowAnim.value,
-                    ),
+            child: SizedBox(
+              width: constraints.maxWidth,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: 1250,
+                  height: max(constraints.maxHeight, contentHeight),
+                  child: Stack(
+                    children: [
+                      RepaintBoundary(
+                        child: CustomPaint(
+                          size: Size.infinite,
+                          painter: MusicSheetStaticPainter(
+                            widget.lesson,
+                            widget.highlightIndex,
+                          ),
+                        ),
+                      ),
+                      AnimatedBuilder(
+                        animation: _glowAnim,
+                        builder: (context, _) => CustomPaint(
+                          size: Size.infinite,
+                          painter: MusicSheetDynamicPainter(
+                            widget.lesson,
+                            widget.highlightIndex,
+                            widget.countdownSeconds,
+                            _glowAnim.value,
+                            widget.elapsedNotifier,
+                            widget.showTimeline,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -154,13 +142,11 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
   }
 }
 
-class MusicSheetPainter extends CustomPainter {
+class MusicSheetStaticPainter extends CustomPainter {
   final MusicLesson lesson;
   final int? highlightIndex;
-  final double? countdownSeconds;
-  final double glowProgress;
 
-  MusicSheetPainter(this.lesson, this.highlightIndex, this.countdownSeconds, [this.glowProgress = 0.5]);
+  MusicSheetStaticPainter(this.lesson, this.highlightIndex);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -242,26 +228,7 @@ class MusicSheetPainter extends CustomPainter {
 
         if (n.chord.isNotEmpty) text(n.chord, x - 8, top - 55, size: 14);
 
-        if (isHighlight && countdownSeconds != null) {
-          text(
-            countdownSeconds!.toStringAsFixed(1),
-            x - 10,
-            top - 95,
-            size: 14,
-            color: Colors.orange,
-            weight: FontWeight.bold,
-          );
-          text(
-            '↓',
-            x - 2,
-            top - 75,
-            size: 18,
-            color: Colors.orange,
-            weight: FontWeight.bold,
-          );
-        }
-
-        _note(canvas, x, y, n.duration, paint, isHighlight);
+        _note(canvas, x, y, n.duration, paint);
         text(n.lyric, x - 14, top + 75, size: 14, color: noteColor);
 
         if ((local + 1) % 4 == 0) {
@@ -278,6 +245,72 @@ class MusicSheetPainter extends CustomPainter {
         linePaint,
       );
     }
+  }
+
+  void _drawTimeline(Canvas canvas, double elapsed, double gap, double left, int perLine) {
+    if (lesson.notes.isEmpty) return;
+
+    int idx = 0;
+    while (idx < lesson.notes.length && lesson.notes[idx].second <= elapsed) {
+      idx++;
+    }
+    
+    double x = left + 155; 
+    int line = 0;
+
+    if (idx == 0) {
+      double t1 = lesson.notes[0].second;
+      double p = t1 > 0 ? (elapsed / t1).clamp(0.0, 1.0) : 1.0;
+      x = left + 80 + p * 75; 
+      line = 0;
+    } else if (idx == lesson.notes.length) {
+      int lastIdx = lesson.notes.length - 1;
+      int local = lastIdx % perLine;
+      line = lastIdx ~/ perLine;
+      double t0 = lesson.notes[lastIdx].second;
+      double diff = elapsed - t0;
+      x = left + 155 + local * 78 + diff * 78;
+    } else {
+      double t0 = lesson.notes[idx-1].second;
+      double t1 = lesson.notes[idx].second;
+      double p = (elapsed - t0) / (t1 - t0);
+      
+      int local0 = (idx - 1) % perLine;
+      int local1 = idx % perLine;
+      line = (idx - 1) ~/ perLine;
+      
+      if (line == idx ~/ perLine) {
+        double x0 = left + 155 + local0 * 78;
+        double x1 = left + 155 + local1 * 78;
+        x = x0 + (x1 - x0) * p;
+      } else {
+        if (p < 0.5) {
+          double x0 = left + 155 + local0 * 78;
+          double x1 = left + 155 + perLine * 78;
+          x = x0 + (x1 - x0) * (p * 2);
+        } else {
+          line = idx ~/ perLine;
+          double x0 = left + 80;
+          double x1 = left + 155 + local1 * 78;
+          x = x0 + (x1 - x0) * ((p - 0.5) * 2);
+        }
+      }
+    }
+    
+    final top = 150.0 + line * 110.0;
+    
+    final glowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.2)
+      ..strokeWidth = 6.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0)
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(x, top - gap), Offset(x, top + gap * 5), glowPaint);
+
+    final linePaint = Paint()
+      ..color = Colors.black87
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(x, top - gap), Offset(x, top + gap * 5), linePaint);
   }
 
   void _keySignature(
@@ -331,25 +364,7 @@ class MusicSheetPainter extends CustomPainter {
     double y,
     String duration,
     Paint paint,
-    bool isHighlight,
   ) {
-    // Draw halo glow for highlighted note
-    if (isHighlight) {
-      final haloRadius = 16.0 + glowProgress * 10.0;
-      final haloAlpha = (80 + glowProgress * 100).toInt().clamp(0, 255);
-      final haloPaint = Paint()
-        ..color = Colors.orange.withAlpha(haloAlpha)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 8 + glowProgress * 6);
-      canvas.drawCircle(Offset(x, y), haloRadius, haloPaint);
-
-      // Outer ring
-      final ringPaint = Paint()
-        ..color = Colors.orange.withAlpha((40 + glowProgress * 60).toInt())
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4);
-      canvas.drawCircle(Offset(x, y), haloRadius + 8, ringPaint);
-    }
 
     final fill = Paint()
       ..color = paint.color
@@ -374,5 +389,163 @@ class MusicSheetPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant MusicSheetPainter oldDelegate) => true;
+  bool shouldRepaint(covariant MusicSheetStaticPainter oldDelegate) => 
+      oldDelegate.highlightIndex != highlightIndex;
+}
+
+class MusicSheetDynamicPainter extends CustomPainter {
+  final MusicLesson lesson;
+  final int? highlightIndex;
+  final double? countdownSeconds;
+  final double glowProgress;
+  final ValueNotifier<double>? elapsedNotifier;
+  final bool showTimeline;
+
+  MusicSheetDynamicPainter(
+    this.lesson,
+    this.highlightIndex,
+    this.countdownSeconds,
+    this.glowProgress,
+    this.elapsedNotifier,
+    this.showTimeline,
+  ) : super(repaint: elapsedNotifier);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const top0 = 150.0, gap = 12.0, left = 70.0, perLine = 12;
+
+    // Draw glowing highlight
+    if (highlightIndex != null && highlightIndex! < lesson.notes.length) {
+      final n = lesson.notes[highlightIndex!];
+      final line = highlightIndex! ~/ perLine;
+      final local = highlightIndex! % perLine;
+      final top = top0 + line * 110.0;
+      final x = left + 155 + local * 78;
+      final y = _noteY(n.note, top, gap);
+
+      // Draw countdown
+      if (countdownSeconds != null) {
+        final tp = TextPainter(textDirection: TextDirection.ltr);
+        tp.text = TextSpan(
+          text: countdownSeconds!.toStringAsFixed(1),
+          style: const TextStyle(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.bold),
+        );
+        tp.layout();
+        tp.paint(canvas, Offset(x - 10, top - 95));
+
+        tp.text = const TextSpan(
+          text: '↓',
+          style: TextStyle(color: Colors.orange, fontSize: 18, fontWeight: FontWeight.bold),
+        );
+        tp.layout();
+        tp.paint(canvas, Offset(x - 2, top - 75));
+      }
+
+      // Draw halo glow
+      final haloRadius = 16.0 + glowProgress * 10.0;
+      final haloAlpha = (80 + glowProgress * 100).toInt().clamp(0, 255);
+      final haloPaint = Paint()
+        ..color = Colors.orange.withAlpha(haloAlpha)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 8 + glowProgress * 6);
+      canvas.drawCircle(Offset(x, y), haloRadius, haloPaint);
+
+      final ringPaint = Paint()
+        ..color = Colors.orange.withAlpha((40 + glowProgress * 60).toInt())
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      canvas.drawCircle(Offset(x, y), haloRadius + 8, ringPaint);
+    }
+
+    // Draw timeline
+    if (showTimeline && elapsedNotifier != null) {
+      _drawTimeline(canvas, elapsedNotifier!.value, gap, left, perLine);
+    }
+  }
+
+  void _drawTimeline(Canvas canvas, double elapsed, double gap, double left, int perLine) {
+    if (lesson.notes.isEmpty) return;
+
+    int idx = 0;
+    while (idx < lesson.notes.length && lesson.notes[idx].second <= elapsed) {
+      idx++;
+    }
+    
+    double x = left + 155; 
+    int line = 0;
+
+    if (idx == 0) {
+      double t1 = lesson.notes[0].second;
+      double p = t1 > 0 ? (elapsed / t1).clamp(0.0, 1.0) : 1.0;
+      x = left + 80 + p * 75; 
+      line = 0;
+    } else if (idx == lesson.notes.length) {
+      int lastIdx = lesson.notes.length - 1;
+      int local = lastIdx % perLine;
+      line = lastIdx ~/ perLine;
+      double t0 = lesson.notes[lastIdx].second;
+      double diff = elapsed - t0;
+      x = left + 155 + local * 78 + diff * 78;
+    } else {
+      double t0 = lesson.notes[idx-1].second;
+      double t1 = lesson.notes[idx].second;
+      double p = (elapsed - t0) / (t1 - t0);
+      
+      int local0 = (idx - 1) % perLine;
+      int local1 = idx % perLine;
+      line = (idx - 1) ~/ perLine;
+      
+      if (line == idx ~/ perLine) {
+        double x0 = left + 155 + local0 * 78;
+        double x1 = left + 155 + local1 * 78;
+        x = x0 + (x1 - x0) * p;
+      } else {
+        if (p < 0.5) {
+          double x0 = left + 155 + local0 * 78;
+          double x1 = left + 155 + perLine * 78;
+          x = x0 + (x1 - x0) * (p * 2);
+        } else {
+          line = idx ~/ perLine;
+          double x0 = left + 80;
+          double x1 = left + 155 + local1 * 78;
+          x = x0 + (x1 - x0) * ((p - 0.5) * 2);
+        }
+      }
+    }
+    
+    final top = 150.0 + line * 110.0;
+    
+    final glowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.2)
+      ..strokeWidth = 6.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0)
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(x, top - gap), Offset(x, top + gap * 5), glowPaint);
+
+    final linePaint = Paint()
+      ..color = Colors.black87
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(x, top - gap), Offset(x, top + gap * 5), linePaint);
+  }
+
+  double _noteY(String note, double top, double gap) {
+    final map = {
+      'C4': top + gap * 5.0,
+      'D4': top + gap * 4.5,
+      'E4': top + gap * 4.0,
+      'F4': top + gap * 3.5,
+      'F#4': top + gap * 3.5,
+      'G4': top + gap * 3.0,
+      'A4': top + gap * 2.5,
+      'B4': top + gap * 2.0,
+      'C5': top + gap * 1.5,
+      'D5': top + gap * 1.0,
+      'E5': top + gap * 0.5,
+    };
+    return map[note] ?? top + gap * 3;
+  }
+
+  @override
+  bool shouldRepaint(covariant MusicSheetDynamicPainter old) => true;
 }

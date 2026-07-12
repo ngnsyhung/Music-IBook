@@ -104,6 +104,13 @@ builder.Services.AddScoped<ITeacherService, TeacherService>();
 
 var app = builder.Build();
 
+// Auto-seed dữ liệu mẫu khi DB còn trống
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<MusicIBookDbContext>();
+    await DbSeeder.SeedAsync(db);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
