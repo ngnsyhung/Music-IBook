@@ -21,22 +21,38 @@ class RhythmTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return CustomPaint(
-            painter: _RhythmPainter(
-              notes: notes,
-              elapsedNotifier: elapsedNotifier,
-              currentNoteIndex: currentNoteIndex,
-              judgeHistory: judgeHistory,
-              canvasWidth: constraints.maxWidth,
-              canvasHeight: constraints.maxHeight,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final hitLineX = constraints.maxWidth * _RhythmPainter.kHitLineRatio;
+        final isActive = currentNoteIndex < notes.length;
+        
+        return Stack(
+          children: [
+            RepaintBoundary(
+              child: CustomPaint(
+                painter: _RhythmPainter(
+                  notes: notes,
+                  elapsedNotifier: elapsedNotifier,
+                  currentNoteIndex: currentNoteIndex,
+                  judgeHistory: judgeHistory,
+                  canvasWidth: constraints.maxWidth,
+                  canvasHeight: constraints.maxHeight,
+                ),
+                size: Size(constraints.maxWidth, constraints.maxHeight),
+              ),
             ),
-            size: Size(constraints.maxWidth, constraints.maxHeight),
-          );
-        },
-      ),
+            Positioned(
+              left: hitLineX - 16, // center the line
+              top: 0,
+              bottom: 0,
+              width: 32, // enough space for blur
+              child: RepaintBoundary(
+                child: _HitLineWidget(isActive: isActive),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -102,7 +118,6 @@ class _RhythmPainter extends CustomPainter {
     _drawTimeRuler(canvas, hitLineX, pps);
     _drawHitZone(canvas, hitLineX, timingWindowPx);
     _drawNotes(canvas, hitLineX, pps);
-    _drawHitLine(canvas, hitLineX);
     _drawTimeDisplay(canvas, hitLineX);
   }
 
@@ -173,8 +188,14 @@ class _RhythmPainter extends CustomPainter {
     }
 
     // Draw note blocks
+    // Culling bounds
+    final visibleStart = _elapsed - (canvasWidth * kHitLineRatio / pps) - 2.0;
+    final visibleEnd = _elapsed + kVisibleSeconds + 2.0;
+
     for (int i = 0; i < notes.length; i++) {
       final note = notes[i];
+      if (note.second < visibleStart || note.second > visibleEnd) continue;
+
       final x = _secondToX(note.second);
       final w = _durationToWidth(note.duration);
 
@@ -246,47 +267,6 @@ class _RhythmPainter extends CustomPainter {
     }
   }
 
-  void _drawHitLine(Canvas canvas, double hitLineX) {
-    final isActive = currentNoteIndex < notes.length;
-    final color = isActive ? const Color(0xFF00E5FF) : const Color(0xFF546E7A);
-
-    // Glow layers
-    for (final d in [16.0, 8.0, 3.0]) {
-      canvas.drawLine(
-        Offset(hitLineX, 0),
-        Offset(hitLineX, canvasHeight),
-        Paint()
-          ..color = color.withValues(alpha: 0.15 / (d / 3))
-          ..strokeWidth = d
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, d / 2),
-      );
-    }
-
-    // Solid line
-    canvas.drawLine(
-      Offset(hitLineX, 0),
-      Offset(hitLineX, canvasHeight),
-      Paint()
-        ..color = color
-        ..strokeWidth = 2.0,
-    );
-
-    // Arrow indicator
-    final ay = canvasHeight / 2;
-    final path = Path()
-      ..moveTo(hitLineX + 9, ay - 8)
-      ..lineTo(hitLineX - 1, ay)
-      ..lineTo(hitLineX + 9, ay + 8);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = color
-        ..strokeWidth = 2.0
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round,
-    );
-  }
-
   void _drawTimeDisplay(Canvas canvas, double hitLineX) {
     final mm = (_elapsed ~/ 60).toString().padLeft(2, '0');
     final ss = (_elapsed % 60).toStringAsFixed(1).padLeft(4, '0');
@@ -350,4 +330,68 @@ class _RhythmPainter extends CustomPainter {
       old.currentNoteIndex != currentNoteIndex ||
       old.judgeHistory.length != judgeHistory.length ||
       old.notes.length != notes.length;
+}
+
+class _HitLineWidget extends StatelessWidget {
+  final bool isActive;
+  const _HitLineWidget({required this.isActive});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size.infinite,
+      painter: _HitLinePainter(isActive: isActive),
+    );
+  }
+}
+
+class _HitLinePainter extends CustomPainter {
+  final bool isActive;
+  _HitLinePainter({required this.isActive});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final color = isActive ? const Color(0xFF00E5FF) : const Color(0xFF546E7A);
+    final centerX = size.width / 2;
+    final canvasHeight = size.height;
+
+    // Glow layers
+    for (final d in [16.0, 8.0, 3.0]) {
+      canvas.drawLine(
+        Offset(centerX, 0),
+        Offset(centerX, canvasHeight),
+        Paint()
+          ..color = color.withValues(alpha: 0.15 / (d / 3))
+          ..strokeWidth = d
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, d / 2),
+      );
+    }
+
+    // Solid line
+    canvas.drawLine(
+      Offset(centerX, 0),
+      Offset(centerX, canvasHeight),
+      Paint()
+        ..color = color
+        ..strokeWidth = 2.0,
+    );
+
+    // Arrow indicator
+    final ay = canvasHeight / 2;
+    final path = Path()
+      ..moveTo(centerX + 9, ay - 8)
+      ..lineTo(centerX - 1, ay)
+      ..lineTo(centerX + 9, ay + 8);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..strokeWidth = 2.0
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HitLinePainter old) => old.isActive != isActive;
 }

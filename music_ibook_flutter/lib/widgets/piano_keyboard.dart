@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart';
+import 'package:soundpool/soundpool.dart';
 
 class PianoKeyboard extends StatefulWidget {
   final void Function(String note) onPressed;
@@ -19,8 +20,8 @@ class PianoKeyboard extends StatefulWidget {
 
 class _PianoKeyboardState extends State<PianoKeyboard>
     with TickerProviderStateMixin {
-  final Map<String, List<AudioPlayer>> _playersPool = {};
-  final Map<String, int> _playerIndex = {};
+  late final Soundpool _soundpool;
+  final Map<String, int> _soundIds = {};
   final Map<String, AnimationController> _pressControllers = {};
   final Map<String, AnimationController> _glowControllers = {};
   final Set<String> _pressedKeys = {};
@@ -58,32 +59,14 @@ class _PianoKeyboardState extends State<PianoKeyboard>
   void initState() {
     super.initState();
 
-    // Thiết lập AudioContext để cho phép phát đè nhiều âm thanh cùng lúc (Polyphony)
-    AudioPlayer.global.setAudioContext(AudioContext(
-      android: AudioContextAndroid(
-        isSpeakerphoneOn: true,
-        stayAwake: true,
-        contentType: AndroidContentType.music,
-        usageType: AndroidUsageType.game,
-        audioFocus: AndroidAudioFocus.none,
-      ),
-      iOS: AudioContextIOS(
-        category: AVAudioSessionCategory.playback,
-        options: const {AVAudioSessionOptions.mixWithOthers},
-      ),
+    // Initialize Soundpool
+    _soundpool = Soundpool.fromOptions(options: const SoundpoolOptions(
+      streamType: StreamType.music,
+      maxStreams: 8,
     ));
 
-    // Load audio for playable notes (tạo pool 2 player cho mỗi nốt để tránh lag máy Android yếu)
-    for (final note in ['C4','D4','E4','F4','F#4','G4','A4','B4','C5','D5','E5']) {
-      final fileName = noteToFile[note] ?? note;
-      _playersPool[note] = List.generate(2, (_) {
-        final player = AudioPlayer();
-        player.setReleaseMode(ReleaseMode.stop); // Tối ưu bộ nhớ
-        player.setSourceAsset('notes/$fileName.mp3');
-        return player;
-      });
-      _playerIndex[note] = 0;
-    }
+    // Load audio for playable notes
+    _initSounds();
 
     // Create press animation controllers for all keys
     for (final note in whiteNotes) {
@@ -116,13 +99,22 @@ class _PianoKeyboardState extends State<PianoKeyboard>
     }
   }
 
-  @override
-  void dispose() {
-    for (final pool in _playersPool.values) {
-      for (final p in pool) {
-        p.dispose();
+  Future<void> _initSounds() async {
+    for (final note in ['C4','D4','E4','F4','F#4','G4','A4','B4','C5','D5','E5']) {
+      final fileName = noteToFile[note] ?? note;
+      try {
+        final assetData = await rootBundle.load('assets/notes/$fileName.mp3');
+        final soundId = await _soundpool.load(assetData);
+        _soundIds[note] = soundId;
+      } catch (e) {
+        debugPrint('Lỗi load âm thanh $note: $e');
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _soundpool.dispose();
     for (final c in _pressControllers.values) {
       c.dispose();
     }
@@ -141,17 +133,9 @@ class _PianoKeyboardState extends State<PianoKeyboard>
         ? note
         : (noteToFile[note] ?? note);
 
-    final pool = _playersPool[mappedNote];
-    if (pool != null) {
-      final idx = _playerIndex[mappedNote]! % pool.length;
-      final player = pool[idx];
-      _playerIndex[mappedNote] = idx + 1;
-
-      if (player.state == PlayerState.playing) {
-        await player.stop();
-      }
-      await player.seek(Duration.zero);
-      await player.resume();
+    final soundId = _soundIds[mappedNote];
+    if (soundId != null) {
+      await _soundpool.play(soundId);
     }
 
     // Press animation
@@ -204,83 +188,85 @@ class _PianoKeyboardState extends State<PianoKeyboard>
                     return Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                        child: AnimatedBuilder(
-                          animation: Listenable.merge([
-                            ?pressCtrl,
-                            if (isTarget) ?glowCtrl,
-                          ]),
-                          builder: (context, _) {
-                            final pressVal = pressCtrl?.value ?? 0.0;
-                            final glowVal = isTarget ? (glowCtrl?.value ?? 0.0) : 0.0;
-
-                            return Transform.translate(
-                              offset: Offset(0, pressVal * 4),
-                              child: GestureDetector(
-                                onTapDown: (_) => _handlePress(note),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: isTarget
-                                        ? LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Color.lerp(Colors.white, const Color(0xFFFFD700), 0.3 + glowVal * 0.4)!,
-                                              Color.lerp(const Color(0xFFFFF0CC), const Color(0xFFFF9800), 0.3 + glowVal * 0.3)!,
-                                            ],
-                                          )
-                                        : isPressed
-                                            ? const LinearGradient(
-                                                begin: Alignment.topCenter,
-                                                end: Alignment.bottomCenter,
-                                                colors: [Color(0xFF90CAF9), Color(0xFF42A5F5)],
-                                              )
-                                            : const LinearGradient(
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                                colors: [Color(0xFFFFFFF0), Color(0xFFEEEEEE)],
-                                              ),
-                                    borderRadius: const BorderRadius.only(
-                                      bottomLeft: Radius.circular(5),
-                                      bottomRight: Radius.circular(5),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: isTarget
-                                            ? Color.lerp(Colors.orange.withAlpha(120), Colors.orange.withAlpha(200), glowVal)!
-                                            : Colors.black.withAlpha(isPressed ? 20 : 60),
-                                        blurRadius: isTarget ? 12 + glowVal * 8 : 3,
-                                        spreadRadius: isTarget ? glowVal * 3 : 0,
-                                        offset: Offset(0, isPressed ? 1 : 3),
+                        child: RepaintBoundary(
+                          child: AnimatedBuilder(
+                            animation: Listenable.merge([
+                              if (pressCtrl != null) pressCtrl,
+                              if (isTarget && glowCtrl != null) glowCtrl,
+                            ]),
+                            builder: (context, _) {
+                              final pressVal = pressCtrl?.value ?? 0.0;
+                              final glowVal = isTarget ? (glowCtrl?.value ?? 0.0) : 0.0;
+  
+                              return Transform.translate(
+                                offset: Offset(0, pressVal * 4),
+                                child: GestureDetector(
+                                  onTapDown: (_) => _handlePress(note),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: isTarget
+                                          ? LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Color.lerp(Colors.white, const Color(0xFFFFD700), 0.3 + glowVal * 0.4)!,
+                                                Color.lerp(const Color(0xFFFFF0CC), const Color(0xFFFF9800), 0.3 + glowVal * 0.3)!,
+                                              ],
+                                            )
+                                          : isPressed
+                                              ? const LinearGradient(
+                                                  begin: Alignment.topCenter,
+                                                  end: Alignment.bottomCenter,
+                                                  colors: [Color(0xFF90CAF9), Color(0xFF42A5F5)],
+                                                )
+                                              : const LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [Color(0xFFFFFFF0), Color(0xFFEEEEEE)],
+                                                ),
+                                      borderRadius: const BorderRadius.only(
+                                        bottomLeft: Radius.circular(5),
+                                        bottomRight: Radius.circular(5),
                                       ),
-                                    ],
-                                    border: Border.all(
-                                      color: isTarget
-                                          ? Colors.orange.withAlpha(180)
-                                          : Colors.black38,
-                                      width: isTarget ? 1.5 : 0.8,
-                                    ),
-                                  ),
-                                  child: Align(
-                                    alignment: Alignment.bottomCenter,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(bottom: 6),
-                                      child: Text(
-                                        _shortNote(note),
-                                        style: TextStyle(
-                                          fontSize: fontSize,
-                                          fontWeight: FontWeight.bold,
+                                      boxShadow: [
+                                        BoxShadow(
                                           color: isTarget
-                                              ? Colors.orange.shade800
-                                              : Colors.black54,
-                                          letterSpacing: -0.5,
+                                              ? Color.lerp(Colors.orange.withAlpha(120), Colors.orange.withAlpha(200), glowVal)!
+                                              : Colors.black.withAlpha(isPressed ? 20 : 60),
+                                          blurRadius: isTarget ? 12 + glowVal * 8 : 3,
+                                          spreadRadius: isTarget ? glowVal * 3 : 0,
+                                          offset: Offset(0, isPressed ? 1 : 3),
+                                        ),
+                                      ],
+                                      border: Border.all(
+                                        color: isTarget
+                                            ? Colors.orange.withAlpha(180)
+                                            : Colors.black38,
+                                        width: isTarget ? 1.5 : 0.8,
+                                      ),
+                                    ),
+                                    child: Align(
+                                      alignment: Alignment.bottomCenter,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(bottom: 6),
+                                        child: Text(
+                                          _shortNote(note),
+                                          style: TextStyle(
+                                            fontSize: fontSize,
+                                            fontWeight: FontWeight.bold,
+                                            color: isTarget
+                                                ? Colors.orange.shade800
+                                                : Colors.black54,
+                                            letterSpacing: -0.5,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                       ),
                     );
@@ -302,43 +288,45 @@ class _PianoKeyboardState extends State<PianoKeyboard>
                     top: 0,
                     width: blackKeyWidth,
                     height: blackKeyHeight,
-                    child: AnimatedBuilder(
-                      animation: pressCtrl ?? const AlwaysStoppedAnimation(0),
-                      builder: (context, _) {
-                        final pressVal = pressCtrl?.value ?? 0.0;
-                        return Transform.translate(
-                          offset: Offset(0, pressVal * 3),
-                          child: GestureDetector(
-                            onTapDown: (_) => _handlePress(blackNote),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: isPressed
-                                    ? const LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [Color(0xFF444466), Color(0xFF222244)],
-                                      )
-                                    : const LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [Color(0xFF2c2c3e), Color(0xFF1a1a2a)],
-                                      ),
-                                borderRadius: const BorderRadius.only(
-                                  bottomLeft: Radius.circular(4),
-                                  bottomRight: Radius.circular(4),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withAlpha(isPressed ? 100 : 180),
-                                    blurRadius: isPressed ? 2 : 5,
-                                    offset: Offset(0, isPressed ? 1 : 4),
+                    child: RepaintBoundary(
+                      child: AnimatedBuilder(
+                        animation: pressCtrl ?? const AlwaysStoppedAnimation(0),
+                        builder: (context, _) {
+                          final pressVal = pressCtrl?.value ?? 0.0;
+                          return Transform.translate(
+                            offset: Offset(0, pressVal * 3),
+                            child: GestureDetector(
+                              onTapDown: (_) => _handlePress(blackNote),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: isPressed
+                                      ? const LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [Color(0xFF444466), Color(0xFF222244)],
+                                        )
+                                      : const LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [Color(0xFF2c2c3e), Color(0xFF1a1a2a)],
+                                        ),
+                                  borderRadius: const BorderRadius.only(
+                                    bottomLeft: Radius.circular(4),
+                                    bottomRight: Radius.circular(4),
                                   ),
-                                ],
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withAlpha(isPressed ? 100 : 180),
+                                      blurRadius: isPressed ? 2 : 5,
+                                      offset: Offset(0, isPressed ? 1 : 4),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   );
                 }),

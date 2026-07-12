@@ -297,9 +297,15 @@ class _ExamScreenState extends State<ExamScreen> with TickerProviderStateMixin {
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Center(
-                child: Text(
-                  '⏱ ${durationSeconds}s',
-                  style: const TextStyle(fontSize: 18, color: Colors.redAccent, fontWeight: FontWeight.bold),
+                child: ValueListenableBuilder<double>(
+                  valueListenable: _elapsedNotifier,
+                  builder: (context, elapsed, _) {
+                    final sec = elapsed < 0 ? 0 : elapsed.floor();
+                    return Text(
+                      '⏱ ${sec}s',
+                      style: const TextStyle(fontSize: 18, color: Colors.redAccent, fontWeight: FontWeight.bold),
+                    );
+                  },
                 ),
               ),
             ),
