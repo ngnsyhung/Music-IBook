@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:soundpool/soundpool.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class PianoKeyboard extends StatefulWidget {
   final void Function(String note) onPressed;
@@ -20,8 +19,8 @@ class PianoKeyboard extends StatefulWidget {
 
 class _PianoKeyboardState extends State<PianoKeyboard>
     with TickerProviderStateMixin {
-  late final Soundpool _soundpool;
-  final Map<String, int> _soundIds = {};
+  final Map<String, List<AudioPlayer>> _playersPool = {};
+  final Map<String, int> _playerIndex = {};
   final Map<String, AnimationController> _pressControllers = {};
   final Map<String, AnimationController> _glowControllers = {};
   final Set<String> _pressedKeys = {};
@@ -59,14 +58,32 @@ class _PianoKeyboardState extends State<PianoKeyboard>
   void initState() {
     super.initState();
 
-    // Initialize Soundpool
-    _soundpool = Soundpool.fromOptions(options: const SoundpoolOptions(
-      streamType: StreamType.music,
-      maxStreams: 8,
+    // Thiết lập AudioContext để cho phép phát đè nhiều âm thanh cùng lúc (Polyphony)
+    AudioPlayer.global.setAudioContext(AudioContext(
+      android: AudioContextAndroid(
+        isSpeakerphoneOn: true,
+        stayAwake: true,
+        contentType: AndroidContentType.music,
+        usageType: AndroidUsageType.game,
+        audioFocus: AndroidAudioFocus.none,
+      ),
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.playback,
+        options: const {AVAudioSessionOptions.mixWithOthers},
+      ),
     ));
 
-    // Load audio for playable notes
-    _initSounds();
+    // Load audio for playable notes (tạo pool 3 player cho mỗi nốt để tránh lag máy Android yếu)
+    for (final note in ['C4','D4','E4','F4','F#4','G4','A4','B4','C5','D5','E5']) {
+      final fileName = noteToFile[note] ?? note;
+      _playersPool[note] = List.generate(3, (_) {
+        final player = AudioPlayer();
+        player.setReleaseMode(ReleaseMode.stop); // Tối ưu bộ nhớ
+        player.setSourceAsset('notes/$fileName.mp3');
+        return player;
+      });
+      _playerIndex[note] = 0;
+    }
 
     // Create press animation controllers for all keys
     for (final note in whiteNotes) {
@@ -99,22 +116,15 @@ class _PianoKeyboardState extends State<PianoKeyboard>
     }
   }
 
-  Future<void> _initSounds() async {
-    for (final note in ['C4','D4','E4','F4','F#4','G4','A4','B4','C5','D5','E5']) {
-      final fileName = noteToFile[note] ?? note;
-      try {
-        final assetData = await rootBundle.load('assets/notes/$fileName.mp3');
-        final soundId = await _soundpool.load(assetData);
-        _soundIds[note] = soundId;
-      } catch (e) {
-        debugPrint('Lỗi load âm thanh $note: $e');
-      }
-    }
-  }
+
 
   @override
   void dispose() {
-    _soundpool.dispose();
+    for (final pool in _playersPool.values) {
+      for (final p in pool) {
+        p.dispose();
+      }
+    }
     for (final c in _pressControllers.values) {
       c.dispose();
     }
@@ -133,9 +143,17 @@ class _PianoKeyboardState extends State<PianoKeyboard>
         ? note
         : (noteToFile[note] ?? note);
 
-    final soundId = _soundIds[mappedNote];
-    if (soundId != null) {
-      await _soundpool.play(soundId);
+    final pool = _playersPool[mappedNote];
+    if (pool != null) {
+      final idx = _playerIndex[mappedNote]! % pool.length;
+      final player = pool[idx];
+      _playerIndex[mappedNote] = idx + 1;
+
+      if (player.state == PlayerState.playing) {
+        await player.stop();
+      }
+      await player.seek(Duration.zero);
+      await player.resume();
     }
 
     // Press animation
