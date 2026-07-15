@@ -376,30 +376,37 @@ class _PracticeScreenState extends State<PracticeScreen>
                     // ─── Score + Timer Bar ───────────────────────────
                     _buildScoreBar(maxScore),
 
-                    // ─── Start Screen ────────────────────────────────
-                    if (!isPlaying && !isFinished)
-                      Expanded(child: _buildStartScreen(l, maxScore)),
+                    // ─── Nốt cần bấm (chỉ hiện khi đang chơi) ───────────────────
+                    if (isPlaying) _buildCurrentNoteHint(currentNote),
 
-                    // ─── Game Screen ──────────────────────────────────
-                    if (isPlaying) ...[
-                      // Nốt cần bấm (chỉ hiện khi đang chơi)
-                      _buildCurrentNoteHint(currentNote),
+                    // ─── RhythmTimeline & Overlays ───────────────────
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          // Luôn hiện RhythmTimeline để xem trước bản nhạc
+                          RhythmTimeline(
+                            notes: l.notes,
+                            elapsedNotifier: _elapsedNotifier,
+                            currentNoteIndex: currentNoteIndex,
+                            judgeHistory: judgeHistory,
+                          ),
 
-                      // RhythmTimeline - phần chính
-                      Expanded(
-                        child: RhythmTimeline(
-                          notes: l.notes,
-                          elapsedNotifier: _elapsedNotifier,
-                          currentNoteIndex: currentNoteIndex,
-                          judgeHistory: judgeHistory,
-                        ),
+                          // Overlay Start / Countdown
+                          if (!isPlaying && !isFinished)
+                            _buildStartOverlay(l, maxScore),
+                        ],
                       ),
-                    ],
+                    ),
 
                     // Piano Keyboard luôn hiện để load âm thanh sớm
-                    PianoKeyboard(
-                      onPressed: press,
-                      targetNote: isPlaying ? currentNote?.note : null,
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1000),
+                        child: PianoKeyboard(
+                          onPressed: press,
+                          targetNote: isPlaying ? currentNote?.note : null,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -563,9 +570,11 @@ class _PracticeScreenState extends State<PracticeScreen>
     );
   }
 
-  Widget _buildStartScreen(MusicLesson l, int maxScore) {
+  Widget _buildStartOverlay(MusicLesson l, int maxScore) {
     final isSmallScreen = MediaQuery.of(context).size.height < 500;
-    return Center(
+    return Container(
+      color: Colors.black.withOpacity(0.65), // Mờ đi để thấy bản nhạc
+      alignment: Alignment.center,
       child: isCountingDown
           ? Text(
               '$countdownValue',
@@ -577,72 +586,118 @@ class _PracticeScreenState extends State<PracticeScreen>
             )
           : SingleChildScrollView(
               child: Padding(
-                padding: EdgeInsets.all(isSmallScreen ? 16 : 32),
+                padding: EdgeInsets.all(isSmallScreen ? 8 : 16),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                  Icon(Icons.queue_music, size: isSmallScreen ? 48 : 64, color: const Color(0xFF00BCD4)),
-            SizedBox(height: isSmallScreen ? 8 : 16),
-            Text(l.title,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: isSmallScreen ? 18 : 22,
-                    fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center),
-            SizedBox(height: isSmallScreen ? 4 : 8),
-            Text(
-              '${l.notes.length} nốt nhạc  ·  Điểm tối đa: $maxScore',
-              style: TextStyle(color: Colors.white54, fontSize: isSmallScreen ? 12 : 14),
+                    // Luôn hiện Title
+                    Text(l.title,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isSmallScreen ? 20 : 22,
+                            fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${l.notes.length} nốt nhạc  ·  Điểm tối đa: $maxScore',
+                      style: TextStyle(color: Colors.white54, fontSize: isSmallScreen ? 13 : 14),
+                    ),
+                    SizedBox(height: isSmallScreen ? 12 : 16),
+                    
+                    if (!isSmallScreen) ...[
+                      // Hướng dẫn hiển thị trực tiếp trên màn hình lớn
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF161B22),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF30363D)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Cách chơi:', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            const _HintRow(icon: '━━', color: Color(0xFF00E5FF), text: 'Vạch xanh = vị trí cần bấm'),
+                            const _HintRow(icon: '⬛', color: Color(0xFF2979FF), text: 'Ô màu xanh = nốt sắp tới'),
+                            const _HintRow(icon: '🟠', color: Colors.orange, text: 'Ô cam = bấm ngay bây giờ!'),
+                            const _HintRow(icon: '✅', color: Colors.greenAccent, text: 'PERFECT < 100ms · GOOD < 200ms'),
+                            const _HintRow(icon: '⚠', color: Colors.amber, text: 'LATE < 500ms · WRONG = sai nốt'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: l.notes.isEmpty ? null : startCountdown,
+                          icon: Icon(Icons.play_circle_fill, size: isSmallScreen ? 24 : 28),
+                          label: Text('BẮT ĐẦU LUYỆN TẬP',
+                              style: TextStyle(fontSize: isSmallScreen ? 15 : 17, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0288D1),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 24 : 40, vertical: isSmallScreen ? 12 : 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          ),
+                        ),
+                        if (isSmallScreen) ...[
+                          const SizedBox(width: 12),
+                          IconButton(
+                            onPressed: () => _showRulesDialog(context),
+                            icon: const Icon(Icons.help_outline, color: Colors.white70, size: 28),
+                            tooltip: 'Hướng dẫn cách chơi',
+                            style: IconButton.styleFrom(
+                              backgroundColor: const Color(0xFF161B22),
+                              padding: const EdgeInsets.all(12),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (!_hasAudio)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 12),
+                        child: Text(
+                            '⚠ Chưa có nhạc nền, sẽ chạy theo timer tự động.',
+                            style: TextStyle(color: Colors.orange, fontSize: 13),
+                            textAlign: TextAlign.center),
+                      ),
+                  ],
+                ),
+              ),
             ),
-            SizedBox(height: isSmallScreen ? 12 : 20),
-            // Hướng dẫn
-            Container(
-              padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161B22),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF30363D)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Cách chơi:', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
-                  SizedBox(height: isSmallScreen ? 4 : 8),
-                  const _HintRow(icon: '━━', color: Color(0xFF00E5FF), text: 'Vạch xanh = vị trí cần bấm'),
-                  const _HintRow(icon: '⬛', color: Color(0xFF2979FF), text: 'Ô màu xanh = nốt sắp tới'),
-                  const _HintRow(icon: '🟠', color: Colors.orange, text: 'Ô cam = bấm ngay bây giờ!'),
-                  const _HintRow(icon: '✅', color: Colors.greenAccent, text: 'PERFECT < 100ms · GOOD < 200ms'),
-                  const _HintRow(icon: '⚠', color: Colors.amber, text: 'LATE < 500ms · WRONG = sai nốt'),
-                ],
-              ),
-            ),
-            SizedBox(height: isSmallScreen ? 20 : 32),
-            ElevatedButton.icon(
-              onPressed: l.notes.isEmpty ? null : startCountdown,
-              icon: Icon(Icons.play_circle_fill, size: isSmallScreen ? 24 : 28),
-              label: Text('BẮT ĐẦU LUYỆN TẬP',
-                  style: TextStyle(fontSize: isSmallScreen ? 15 : 17, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0288D1),
-                foregroundColor: Colors.white,
-                padding:
-                    EdgeInsets.symmetric(horizontal: isSmallScreen ? 24 : 40, vertical: isSmallScreen ? 12 : 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30)),
-              ),
-            ),
-            if (!_hasAudio)
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: Text(
-                    '⚠ Chưa có nhạc nền, sẽ chạy theo timer tự động.',
-                    style: TextStyle(color: Colors.orange, fontSize: 13),
-                    textAlign: TextAlign.center),
-              ),
+    );
+  }
+
+  void _showRulesDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
+        title: const Text('Cách chơi', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            _HintRow(icon: '━━', color: Color(0xFF00E5FF), text: 'Vạch xanh = vị trí cần bấm'),
+            _HintRow(icon: '⬛', color: Color(0xFF2979FF), text: 'Ô màu xanh = nốt sắp tới'),
+            _HintRow(icon: '🟠', color: Colors.orange, text: 'Ô cam = bấm ngay bây giờ!'),
+            _HintRow(icon: '✅', color: Colors.greenAccent, text: 'PERFECT < 100ms · GOOD < 200ms'),
+            _HintRow(icon: '⚠', color: Colors.amber, text: 'LATE < 500ms · WRONG = sai nốt'),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng', style: TextStyle(color: Color(0xFF00BCD4))),
+          ),
+        ],
       ),
-    ));
+    );
   }
 
   String _formatTime(double seconds) {

@@ -4,6 +4,41 @@ import 'dart:math';
 
 import '../models/lesson.dart';
 
+class StaffLayout {
+  final double physicalWidth;
+  final double scale;
+  final double virtualWidth;
+  
+  final int perLine;
+  final double left;
+  final double right;
+  final double startX;
+  final double noteSpacing;
+
+  StaffLayout(this.physicalWidth)
+      : scale = _getScale(physicalWidth),
+        virtualWidth = physicalWidth / _getScale(physicalWidth),
+        left = 40.0,
+        right = (physicalWidth / _getScale(physicalWidth)) - 40.0,
+        startX = 40.0 + 125.0,
+        perLine = _getPerLine(physicalWidth / _getScale(physicalWidth)),
+        noteSpacing = ((physicalWidth / _getScale(physicalWidth)) - 80.0 - 125.0) / _getPerLine(physicalWidth / _getScale(physicalWidth));
+
+  static double _getScale(double w) {
+    if (w >= 800) return 1.0;
+    if (w >= 600) return 0.85;
+    if (w >= 400) return 0.75;
+    return 0.65;
+  }
+
+  static int _getPerLine(double vw) {
+    if (vw >= 1000) return 12;
+    if (vw >= 800) return 10;
+    if (vw >= 600) return 8;
+    return 6;
+  }
+}
+
 class MusicStaff extends StatefulWidget {
   final MusicLesson lesson;
   final int? highlightIndex;
@@ -30,6 +65,7 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
   final ScrollController _verticalController = ScrollController();
   late final AnimationController _glowController;
   late final Animation<double> _glowAnim;
+  StaffLayout? _lastLayout;
 
   @override
   void initState() {
@@ -60,10 +96,10 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
   }
 
   void _scrollToHighlight() {
-    if (widget.highlightIndex == null) return;
+    if (widget.highlightIndex == null || _lastLayout == null) return;
     
     final i = widget.highlightIndex!;
-    const perLine = 12;
+    final perLine = _lastLayout!.perLine;
     final line = i ~/ perLine;
     
     const top0 = 150.0;
@@ -73,7 +109,6 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
     
     final screenHeight = MediaQuery.of(context).size.height;
     
-    // Vertical scroll only, since horizontal is scaled to fit
     double targetY = top - (screenHeight / 3);
     if (targetY < 0) targetY = 0;
     if (_verticalController.hasClients) {
@@ -85,54 +120,54 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final totalLines = widget.lesson.notes.isEmpty
-        ? 1
-        : (widget.lesson.notes.length / 12).ceil();
-    final contentHeight = max(360.0, 150.0 + totalLines * 110.0 + 100.0);
-
     return Container(
       color: const Color(0xFFFFF6E6),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final canvasWidth = constraints.maxWidth;
+          _lastLayout = StaffLayout(canvasWidth);
+          final layout = _lastLayout!;
+
+          final totalLines = widget.lesson.notes.isEmpty
+              ? 1
+              : (widget.lesson.notes.length / layout.perLine).ceil();
+          final virtualContentHeight = max(500.0, 150.0 + totalLines * 110.0 + 100.0);
+          final contentHeight = virtualContentHeight * layout.scale;
+
           return SingleChildScrollView(
             controller: _verticalController,
             scrollDirection: Axis.vertical,
             child: SizedBox(
-              width: constraints.maxWidth,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.topCenter,
-                child: SizedBox(
-                  width: 1250,
-                  height: max(constraints.maxHeight, contentHeight),
-                  child: Stack(
-                    children: [
-                      RepaintBoundary(
-                        child: CustomPaint(
-                          size: Size.infinite,
-                          painter: MusicSheetStaticPainter(
-                            widget.lesson,
-                            widget.highlightIndex,
-                          ),
-                        ),
+              width: canvasWidth,
+              height: max(constraints.maxHeight, contentHeight),
+              child: Stack(
+                children: [
+                  RepaintBoundary(
+                    child: CustomPaint(
+                      size: Size.infinite,
+                      painter: MusicSheetStaticPainter(
+                        widget.lesson,
+                        widget.highlightIndex,
+                        layout,
                       ),
-                      AnimatedBuilder(
-                        animation: _glowAnim,
-                        builder: (context, _) => CustomPaint(
-                          size: Size.infinite,
-                          painter: MusicSheetDynamicPainter(
-                            widget.lesson,
-                            widget.highlightIndex,
-                            widget.countdownSeconds,
-                            _glowAnim.value,
-                            widget.elapsedNotifier,
-                            widget.showTimeline,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  AnimatedBuilder(
+                    animation: _glowAnim,
+                    builder: (context, _) => CustomPaint(
+                      size: Size.infinite,
+                      painter: MusicSheetDynamicPainter(
+                        widget.lesson,
+                        widget.highlightIndex,
+                        widget.countdownSeconds,
+                        _glowAnim.value,
+                        widget.elapsedNotifier,
+                        widget.showTimeline,
+                        layout,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -145,11 +180,14 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
 class MusicSheetStaticPainter extends CustomPainter {
   final MusicLesson lesson;
   final int? highlightIndex;
+  final StaffLayout layout;
 
-  MusicSheetStaticPainter(this.lesson, this.highlightIndex);
+  MusicSheetStaticPainter(this.lesson, this.highlightIndex, this.layout);
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.scale(layout.scale, layout.scale);
+    
     final linePaint = Paint()
       ..color = Colors.black
       ..strokeWidth = 1.4;
@@ -171,15 +209,21 @@ class MusicSheetStaticPainter extends CustomPainter {
       tp.paint(canvas, Offset(x, y));
     }
 
-    text(lesson.title, 450, 10, size: 32, weight: FontWeight.bold);
-    text(lesson.composer.isEmpty ? 'Tác giả' : lesson.composer, 1040, 55);
+    // Center title and composer based on virtualWidth
+    final titleWidth = lesson.title.length * 15.0; // Rough estimate
+    text(lesson.title, max(10.0, (layout.virtualWidth - titleWidth) / 2), 10, size: 32, weight: FontWeight.bold);
+    text(lesson.composer.isEmpty ? 'Tác giả' : lesson.composer, layout.virtualWidth - 150, 55);
 
     const top0 = 150.0,
         gap = 12.0,
-        left = 70.0,
-        right = 1180.0,
         systemGap = 110.0;
-    const perLine = 12;
+        
+    final left = layout.left;
+    final right = layout.right;
+    final perLine = layout.perLine;
+    final startX = layout.startX;
+    final noteSpacing = layout.noteSpacing;
+
     final totalLines = lesson.notes.isEmpty
         ? 1
         : (lesson.notes.length / perLine).ceil();
@@ -196,12 +240,12 @@ class MusicSheetStaticPainter extends CustomPainter {
       }
 
       text('𝄞', left + 5, top - 22, size: 52);
-      _keySignature(lesson.keySignature, left + 55, top, text);
+      _keySignature(lesson.keySignature, left + 45, top, text);
 
       final t = lesson.timeSignature.split('/');
       if (t.length == 2) {
-        text(t[0], left + 105, top - 8, size: 20);
-        text(t[1], left + 105, top + 18, size: 20);
+        text(t[0], left + 85, top - 8, size: 20);
+        text(t[1], left + 85, top + 18, size: 20);
       }
 
       canvas.drawLine(
@@ -217,7 +261,7 @@ class MusicSheetStaticPainter extends CustomPainter {
       for (var i = start; i < end; i++) {
         final n = lesson.notes[i];
         final local = i - start;
-        final x = left + 155 + local * 78;
+        final x = startX + local * noteSpacing;
         final y = _noteY(n.note, top, gap);
 
         final isHighlight = highlightIndex == i;
@@ -245,72 +289,6 @@ class MusicSheetStaticPainter extends CustomPainter {
         linePaint,
       );
     }
-  }
-
-  void _drawTimeline(Canvas canvas, double elapsed, double gap, double left, int perLine) {
-    if (lesson.notes.isEmpty) return;
-
-    int idx = 0;
-    while (idx < lesson.notes.length && lesson.notes[idx].second <= elapsed) {
-      idx++;
-    }
-    
-    double x = left + 155; 
-    int line = 0;
-
-    if (idx == 0) {
-      double t1 = lesson.notes[0].second;
-      double p = t1 > 0 ? (elapsed / t1).clamp(0.0, 1.0) : 1.0;
-      x = left + 80 + p * 75; 
-      line = 0;
-    } else if (idx == lesson.notes.length) {
-      int lastIdx = lesson.notes.length - 1;
-      int local = lastIdx % perLine;
-      line = lastIdx ~/ perLine;
-      double t0 = lesson.notes[lastIdx].second;
-      double diff = elapsed - t0;
-      x = left + 155 + local * 78 + diff * 78;
-    } else {
-      double t0 = lesson.notes[idx-1].second;
-      double t1 = lesson.notes[idx].second;
-      double p = (elapsed - t0) / (t1 - t0);
-      
-      int local0 = (idx - 1) % perLine;
-      int local1 = idx % perLine;
-      line = (idx - 1) ~/ perLine;
-      
-      if (line == idx ~/ perLine) {
-        double x0 = left + 155 + local0 * 78;
-        double x1 = left + 155 + local1 * 78;
-        x = x0 + (x1 - x0) * p;
-      } else {
-        if (p < 0.5) {
-          double x0 = left + 155 + local0 * 78;
-          double x1 = left + 155 + perLine * 78;
-          x = x0 + (x1 - x0) * (p * 2);
-        } else {
-          line = idx ~/ perLine;
-          double x0 = left + 80;
-          double x1 = left + 155 + local1 * 78;
-          x = x0 + (x1 - x0) * ((p - 0.5) * 2);
-        }
-      }
-    }
-    
-    final top = 150.0 + line * 110.0;
-    
-    final glowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.2)
-      ..strokeWidth = 6.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0)
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(x, top - gap), Offset(x, top + gap * 5), glowPaint);
-
-    final linePaint = Paint()
-      ..color = Colors.black87
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(x, top - gap), Offset(x, top + gap * 5), linePaint);
   }
 
   void _keySignature(
@@ -400,6 +378,7 @@ class MusicSheetDynamicPainter extends CustomPainter {
   final double glowProgress;
   final ValueNotifier<double>? elapsedNotifier;
   final bool showTimeline;
+  final StaffLayout layout;
 
   MusicSheetDynamicPainter(
     this.lesson,
@@ -408,11 +387,18 @@ class MusicSheetDynamicPainter extends CustomPainter {
     this.glowProgress,
     this.elapsedNotifier,
     this.showTimeline,
+    this.layout,
   ) : super(repaint: elapsedNotifier);
 
   @override
   void paint(Canvas canvas, Size size) {
-    const top0 = 150.0, gap = 12.0, left = 70.0, perLine = 12;
+    canvas.scale(layout.scale, layout.scale);
+    
+    const top0 = 150.0, gap = 12.0;
+    final left = layout.left;
+    final perLine = layout.perLine;
+    final startX = layout.startX;
+    final noteSpacing = layout.noteSpacing;
 
     // Draw glowing highlight
     if (highlightIndex != null && highlightIndex! < lesson.notes.length) {
@@ -420,7 +406,7 @@ class MusicSheetDynamicPainter extends CustomPainter {
       final line = highlightIndex! ~/ perLine;
       final local = highlightIndex! % perLine;
       final top = top0 + line * 110.0;
-      final x = left + 155 + local * 78;
+      final x = startX + local * noteSpacing;
       final y = _noteY(n.note, top, gap);
 
       // Draw countdown
@@ -459,11 +445,11 @@ class MusicSheetDynamicPainter extends CustomPainter {
 
     // Draw timeline
     if (showTimeline && elapsedNotifier != null) {
-      _drawTimeline(canvas, elapsedNotifier!.value, gap, left, perLine);
+      _drawTimeline(canvas, elapsedNotifier!.value, gap, left, perLine, startX, noteSpacing);
     }
   }
 
-  void _drawTimeline(Canvas canvas, double elapsed, double gap, double left, int perLine) {
+  void _drawTimeline(Canvas canvas, double elapsed, double gap, double left, int perLine, double startX, double noteSpacing) {
     if (lesson.notes.isEmpty) return;
 
     int idx = 0;
@@ -471,13 +457,15 @@ class MusicSheetDynamicPainter extends CustomPainter {
       idx++;
     }
     
-    double x = left + 155; 
+    double x = startX; 
     int line = 0;
+
+    final preStart = left + (startX - left) / 2;
 
     if (idx == 0) {
       double t1 = lesson.notes[0].second;
       double p = t1 > 0 ? (elapsed / t1).clamp(0.0, 1.0) : 1.0;
-      x = left + 80 + p * 75; 
+      x = preStart + p * (startX - preStart); 
       line = 0;
     } else if (idx == lesson.notes.length) {
       int lastIdx = lesson.notes.length - 1;
@@ -485,7 +473,7 @@ class MusicSheetDynamicPainter extends CustomPainter {
       line = lastIdx ~/ perLine;
       double t0 = lesson.notes[lastIdx].second;
       double diff = elapsed - t0;
-      x = left + 155 + local * 78 + diff * 78;
+      x = startX + local * noteSpacing + diff * noteSpacing;
     } else {
       double t0 = lesson.notes[idx-1].second;
       double t1 = lesson.notes[idx].second;
@@ -496,18 +484,18 @@ class MusicSheetDynamicPainter extends CustomPainter {
       line = (idx - 1) ~/ perLine;
       
       if (line == idx ~/ perLine) {
-        double x0 = left + 155 + local0 * 78;
-        double x1 = left + 155 + local1 * 78;
+        double x0 = startX + local0 * noteSpacing;
+        double x1 = startX + local1 * noteSpacing;
         x = x0 + (x1 - x0) * p;
       } else {
         if (p < 0.5) {
-          double x0 = left + 155 + local0 * 78;
-          double x1 = left + 155 + perLine * 78;
+          double x0 = startX + local0 * noteSpacing;
+          double x1 = startX + perLine * noteSpacing;
           x = x0 + (x1 - x0) * (p * 2);
         } else {
           line = idx ~/ perLine;
-          double x0 = left + 80;
-          double x1 = left + 155 + local1 * 78;
+          double x0 = preStart;
+          double x1 = startX + local1 * noteSpacing;
           x = x0 + (x1 - x0) * ((p - 0.5) * 2);
         }
       }

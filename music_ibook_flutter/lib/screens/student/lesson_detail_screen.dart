@@ -19,15 +19,22 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   void initState() {
     super.initState();
     Future.microtask(
-      () => context.read<LessonProvider>().loadLesson(widget.lessonId),
+          () => context.read<LessonProvider>().loadLesson(widget.lessonId),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final lesson = context.watch<LessonProvider>().current;
-    final colorScheme = Theme.of(context).colorScheme;
-    final isSmallScreen = MediaQuery.of(context).size.height < 500;
+    final lesson = context
+        .watch<LessonProvider>()
+        .current;
+    final colorScheme = Theme
+        .of(context)
+        .colorScheme;
+    final isSmallScreen = MediaQuery
+        .of(context)
+        .size
+        .height < 500;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -47,153 +54,226 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       floatingActionButton: lesson == null
           ? null
           : _BottomDock(
-              onPractice: () => context.push('/student/practice/${lesson.id}'),
-              onExam: () => context.push('/student/exam/${lesson.id}'),
-              isSmallScreen: isSmallScreen,
-            ),
+        onPractice: () => context.push('/student/practice/${lesson.id}'),
+        onExam: () => context.push('/student/exam/${lesson.id}'),
+        isSmallScreen: isSmallScreen,
+      ),
       body: lesson == null
           ? const Center(child: CircularProgressIndicator())
           : Stack(
+        children: [
+          // Gradient background behind everything
+          Container(
+            height: isSmallScreen ? 170 : 280,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colorScheme.primary,
+                  colorScheme.primary.withValues(alpha: 0.85),
+                  colorScheme.secondary.withValues(alpha: 0.8),
+                ],
+              ),
+            ),
+          ),
+
+          // Watermark pattern
+          Positioned(
+            top: -20,
+            right: -40,
+            child: Transform.rotate(
+              angle: 0.2,
+              child: Icon(
+                Icons.music_note_rounded,
+                size: 260,
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 140,
+            left: -50,
+            child: Transform.rotate(
+              angle: -0.15,
+              child: Icon(
+                Icons.music_note_rounded,
+                size: 160,
+                color: Colors.white.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+
+          SafeArea(
+            bottom: false,
+            child: Column(
               children: [
-                // Gradient background behind everything
-                Container(
-                  height: isSmallScreen ? 170 : 280,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        colorScheme.primary,
-                        colorScheme.primary.withValues(alpha: 0.85),
-                        colorScheme.secondary.withValues(alpha: 0.8),
-                      ],
-                    ),
+                SizedBox(height: isSmallScreen ? 16 : kToolbarHeight - 8),
+
+                // Lesson info card
+                if (!isSmallScreen)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: _LessonInfoCard(lesson: lesson),
                   ),
-                ),
 
-                // Watermark pattern
-                Positioned(
-                  top: -20,
-                  right: -40,
-                  child: Transform.rotate(
-                    angle: 0.2,
-                    child: Icon(
-                      Icons.music_note_rounded,
-                      size: 260,
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 140,
-                  left: -50,
-                  child: Transform.rotate(
-                    angle: -0.15,
-                    child: Icon(
-                      Icons.music_note_rounded,
-                      size: 160,
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
-                  ),
-                ),
+                if (!isSmallScreen) const SizedBox(height: 12),
 
-                SafeArea(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: kToolbarHeight - 8),
-
-                      // Lesson info card
-                      if (!isSmallScreen)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                          child: _LessonInfoCard(lesson: lesson),
-                        ),
-
-                      if (!isSmallScreen) const SizedBox(height: 12),
-
-                      // Content area with pill TabBar
-                      Expanded(
-                        child: DefaultTabController(
-                          length: 2,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(32),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.03),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, -5),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    16,
-                                    16,
-                                    8,
-                                  ),
-                                  child: _PillTabBar(colorScheme: colorScheme),
-                                ),
-                                Expanded(
-                                  child: TabBarView(
-                                    children: [
-                                      ListView(
-                                        padding: const EdgeInsets.fromLTRB(
-                                          16,
-                                          4,
-                                          16,
-                                          120,
-                                        ),
-                                        children: [
-                                          _SectionCard(
-                                            title: lesson.theoryTitle,
-                                            content: lesson.theoryContent,
-                                            icon: Icons.menu_book_rounded,
-                                            color: colorScheme.primary,
-                                          ),
-                                          const SizedBox(height: 16),
-                                          _SectionCard(
-                                            title: 'Hướng dẫn luyện tập',
-                                            content: lesson.practiceGuide,
-                                            icon:
-                                                Icons.tips_and_updates_rounded,
-                                            color: colorScheme.secondary,
-                                          ),
-                                        ],
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                          16,
-                                          4,
-                                          16,
-                                          120,
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          child: MusicStaff(lesson: lesson),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                // Content area with pill TabBar or Split View
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth >= 900) {
+                        return _buildSplitView(context, lesson, colorScheme);
+                      } else {
+                        return _buildTabView(context, lesson, colorScheme, isSmallScreen);
+                      }
+                    },
                   ),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabView(BuildContext context, dynamic lesson,
+      ColorScheme colorScheme, bool isSmallScreen) {
+    return DefaultTabController(
+      length: 2,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme
+              .of(context)
+              .colorScheme
+              .surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(32),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: _PillTabBar(colorScheme: colorScheme),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  ListView(
+                    padding: EdgeInsets.fromLTRB(16, 4, 16, isSmallScreen ? 70 : 120),
+                    children: [
+                      _SectionCard(
+                        title: lesson.theoryTitle,
+                        content: lesson.theoryContent,
+                        icon: Icons.menu_book_rounded,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(height: 16),
+                      _SectionCard(
+                        title: 'Hướng dẫn luyện tập',
+                        content: lesson.practiceGuide,
+                        icon: Icons.tips_and_updates_rounded,
+                        color: colorScheme.secondary,
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16, 4, 16, isSmallScreen ? 70 : 120),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: MusicStaff(lesson: lesson),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSplitView(BuildContext context, dynamic lesson,
+      ColorScheme colorScheme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme
+            .of(context)
+            .colorScheme
+            .surface,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(32),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Theory Side
+          Expanded(
+            flex: 4,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 12, 120),
+              children: [
+                _SectionCard(
+                  title: lesson.theoryTitle,
+                  content: lesson.theoryContent,
+                  icon: Icons.menu_book_rounded,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Hướng dẫn luyện tập',
+                  content: lesson.practiceGuide,
+                  icon: Icons.tips_and_updates_rounded,
+                  color: colorScheme.secondary,
+                ),
+              ],
+            ),
+          ),
+          // Divider
+          Container(
+            width: 1,
+            margin: const EdgeInsets.symmetric(vertical: 24),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+          // Music Staff Side
+          Expanded(
+            flex: 6,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 24, 24, 120),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                        color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.5)),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: MusicStaff(lesson: lesson),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -340,10 +420,12 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.sizeOf(context).width < 600;
+    
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(isNarrow ? 16 : 24),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.06),
@@ -354,38 +436,38 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.12), width: 1.5),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(isNarrow ? 16 : 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: EdgeInsets.all(isNarrow ? 8 : 10),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(isNarrow ? 10 : 14),
                   ),
-                  child: Icon(icon, color: color, size: 22),
+                  child: Icon(icon, color: color, size: isNarrow ? 18 : 22),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: isNarrow ? 10 : 14),
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 19,
+                    style: TextStyle(
+                      fontSize: isNarrow ? 17 : 19,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: isNarrow ? 12 : 16),
             Text(
               content,
               style: TextStyle(
-                fontSize: 16,
-                height: 1.6,
+                fontSize: isNarrow ? 14 : 16,
+                height: isNarrow ? 1.4 : 1.6,
                 color: Theme.of(
                   context,
                 ).colorScheme.onSurface.withValues(alpha: 0.85),
