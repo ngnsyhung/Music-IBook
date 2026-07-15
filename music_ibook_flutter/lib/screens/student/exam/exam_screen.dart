@@ -362,76 +362,32 @@ class _ExamScreenState extends State<ExamScreen> with TickerProviderStateMixin {
                         ),
                       ),
 
-                    // ─── Start / Countdown Screen ───────────────────
-                    if (!isPlaying && !isFinished)
-                      Expanded(
-                        child: Center(
-                          child: isCountingDown
-                              ? Text(
-                                  '$countdownValue',
-                                  style: TextStyle(
-                                    color: Colors.redAccent,
-                                    fontSize: isSmallScreen ? 80 : 120,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )
-                              : SingleChildScrollView(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                    Icon(Icons.warning_amber_rounded, size: isSmallScreen ? 48 : 60, color: Colors.redAccent),
-                                    SizedBox(height: isSmallScreen ? 8 : 16),
-                                    Text(l.title, style: TextStyle(color: Colors.white, fontSize: isSmallScreen ? 18 : 22, fontWeight: FontWeight.bold)),
-                                    SizedBox(height: isSmallScreen ? 4 : 8),
-                                    Text(
-                                      'Chế độ kiểm tra:\n• Không có gợi ý màu nốt\n• Cửa sổ thời gian chặt ±300ms\n• Bấm sai tự động chuyển nốt tiếp',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(color: Colors.white54, fontSize: isSmallScreen ? 12 : 14, height: 1.8),
-                                    ),
-                                    SizedBox(height: isSmallScreen ? 8 : 16),
-                                    CheckboxListTile(
-                                      value: showTimeline,
-                                      onChanged: (val) {
-                                        setState(() => showTimeline = val ?? false);
-                                      },
-                                      title: Text('Hiển thị thanh nhịp độ', style: TextStyle(color: Colors.white70, fontSize: isSmallScreen ? 13 : 15)),
-                                      controlAffinity: ListTileControlAffinity.leading,
-                                      activeColor: Colors.redAccent,
-                                      checkColor: Colors.white,
-                                      contentPadding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 40),
-                                      visualDensity: isSmallScreen ? VisualDensity.compact : VisualDensity.standard,
-                                    ),
-                                    SizedBox(height: isSmallScreen ? 8 : 16),
-                                    ElevatedButton.icon(
-                                      onPressed: startCountdown,
-                                      icon: Icon(Icons.play_circle_fill, size: isSmallScreen ? 24 : 32),
-                                      label: Text('BẮT ĐẦU KIỂM TRA', style: TextStyle(fontSize: isSmallScreen ? 15 : 18, fontWeight: FontWeight.bold)),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.redAccent,
-                                        foregroundColor: Colors.white,
-                                        padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 24 : 40, vertical: isSmallScreen ? 12 : 18),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                        ),
-                      ),
+                    // ─── MusicStaff & Overlays ───────────────────
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          // Luôn hiện MusicStaff để xem trước bản nhạc
+                          MusicStaff(
+                            lesson: l,
+                            elapsedNotifier: _elapsedNotifier,
+                            showTimeline: showTimeline,
+                          ),
 
-                    if (isPlaying) ...[
-                      Expanded(
-                        child: MusicStaff(
-                          lesson: l,
-                          elapsedNotifier: _elapsedNotifier,
-                          showTimeline: showTimeline,
-                        ),
+                          // Overlay Start / Countdown
+                          if (!isPlaying && !isFinished)
+                            _buildStartOverlay(l),
+                        ],
                       ),
-                    ],
+                    ),
                     
                     // Piano Keyboard luôn hiện để load âm thanh sớm
                     // Không truyền targetNote → không hint màu nốt
-                    PianoKeyboard(onPressed: press),
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1000),
+                        child: PianoKeyboard(onPressed: press),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -505,6 +461,115 @@ class _ExamScreenState extends State<ExamScreen> with TickerProviderStateMixin {
       case 'MISS': return Colors.grey;
       default: return Colors.white;
     }
+  }
+
+  Widget _buildStartOverlay(MusicLesson l) {
+    final isSmallScreen = MediaQuery.of(context).size.height < 500;
+    return Container(
+      color: const Color(0xFF0F111A), // Nền đặc, che hoàn toàn MusicStaff để tránh nhìn trước nốt
+      alignment: Alignment.center,
+      child: isCountingDown
+          ? Text(
+              '$countdownValue',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontSize: isSmallScreen ? 80 : 120,
+                fontWeight: FontWeight.bold,
+              ),
+            )
+          : SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.all(isSmallScreen ? 8 : 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(l.title,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isSmallScreen ? 20 : 22,
+                            fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+
+                    if (!isSmallScreen) ...[
+                      Icon(Icons.warning_amber_rounded, size: 60, color: Colors.redAccent),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Chế độ kiểm tra:\n• Không có gợi ý màu nốt\n• Cửa sổ thời gian chặt ±300ms\n• Bấm sai tự động chuyển nốt tiếp',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white54, fontSize: 14, height: 1.8),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    CheckboxListTile(
+                      value: showTimeline,
+                      onChanged: (val) {
+                        setState(() => showTimeline = val ?? false);
+                      },
+                      title: Text('Hiển thị thanh nhịp độ', style: TextStyle(color: Colors.white70, fontSize: isSmallScreen ? 13 : 15)),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: Colors.redAccent,
+                      checkColor: Colors.white,
+                      side: const BorderSide(color: Colors.white70, width: 1.5),
+                      contentPadding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 40),
+                      visualDensity: isSmallScreen ? VisualDensity.compact : VisualDensity.standard,
+                    ),
+                    SizedBox(height: isSmallScreen ? 8 : 16),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: startCountdown,
+                          icon: Icon(Icons.play_circle_fill, size: isSmallScreen ? 24 : 32),
+                          label: Text('BẮT ĐẦU KIỂM TRA', style: TextStyle(fontSize: isSmallScreen ? 15 : 18, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 24 : 40, vertical: isSmallScreen ? 12 : 18),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          ),
+                        ),
+                        if (isSmallScreen) ...[
+                          const SizedBox(width: 12),
+                          IconButton(
+                            onPressed: () => _showRulesDialog(context),
+                            icon: const Icon(Icons.help_outline, color: Colors.white70, size: 28),
+                            tooltip: 'Hướng dẫn cách chơi',
+                            style: IconButton.styleFrom(
+                              backgroundColor: const Color(0xFF161B22),
+                              padding: const EdgeInsets.all(12),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  void _showRulesDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
+        title: const Text('Quy tắc kiểm tra', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          '• Không có gợi ý màu nốt\n• Cửa sổ thời gian chặt ±300ms\n• Bấm sai tự động chuyển nốt tiếp',
+          style: TextStyle(color: Colors.white70, height: 1.8),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -99,39 +99,66 @@ class _StudentHomeState extends State<StudentHome>
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                  sliver: SliverList.builder(
-                    itemCount: p.lessons.length,
-                    itemBuilder: (_, i) {
-                      final l = p.lessons[i];
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: 1),
-                        duration: Duration(milliseconds: 350 + i * 60),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, (1 - value) * 20),
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: LessonCard(
-                            title: l.title,
-                            subtitle: '${l.composer} • ${l.notes.length} nốt',
-                            onTap: () =>
-                                context.push('/student/lesson/${l.id}'),
+                  sliver: SliverLayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.crossAxisExtent;
+                      int crossAxisCount = 1;
+                      if (width >= 1024) {
+                        crossAxisCount = 3;
+                      } else if (width >= 600) {
+                        crossAxisCount = 2;
+                      }
+
+                      if (crossAxisCount == 1) {
+                        return SliverList.builder(
+                          itemCount: p.lessons.length,
+                          itemBuilder: (_, i) => _buildLessonItem(context, p.lessons[i], i),
+                        );
+                      } else {
+                        return SliverGrid(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            mainAxisExtent: 160,
                           ),
-                        ),
-                      );
+                          delegate: SliverChildBuilderDelegate(
+                            (_, i) => _buildLessonItem(context, p.lessons[i], i),
+                            childCount: p.lessons.length,
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLessonItem(BuildContext context, dynamic l, int i) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 350 + i * 60),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 20),
+            child: child,
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: LessonCard(
+          title: l.title,
+          subtitle: '${l.composer} • ${l.notes.length} nốt',
+          onTap: () => context.push('/student/lesson/${l.id}'),
+        ),
       ),
     );
   }
