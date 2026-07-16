@@ -94,6 +94,28 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateProfile(String fullName, String? newPassword) async {
+    loading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      final res = await _service.updateProfile(fullName, newPassword);
+      token = res.accessToken;
+      role = res.role;
+      this.fullName = res.fullName;
+      await _storage.saveAuth(token: token!, role: role!, fullName: this.fullName!);
+      loading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = ApiClient.errorMessage(e);
+      loading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     await _storage.clear();
     token = null;

@@ -177,6 +177,36 @@ public class AuthService : IAuthService
         };
     }
 
+    public async Task<AuthResponse> UpdateProfileAsync(UpdateProfileRequest request, long userId)
+    {
+        if (request == null)
+            throw new ArgumentNullException(nameof(request));
+
+        if (string.IsNullOrWhiteSpace(request.FullName))
+            throw new ArgumentException("Họ và tên không được để trống");
+
+        var user = await userRepo.GetByIdAsync(userId);
+        if (user == null)
+            throw new Exception("Không tìm thấy người dùng");
+
+        user.FullName = request.FullName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        }
+
+        userRepo.Update(user);
+        await userRepo.SaveChangesAsync();
+
+        return new AuthResponse
+        {
+            AccessToken = jwt.GenerateToken(user),
+            FullName = user.FullName,
+            Role = user.Role
+        };
+    }
+
     public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request)
     {
         if (request == null)

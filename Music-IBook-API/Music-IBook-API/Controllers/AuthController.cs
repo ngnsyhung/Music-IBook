@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Music_IBook_API.DTOs;
 using Music_IBook_API.Services;
@@ -6,7 +8,7 @@ namespace Music_IBook_API.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController : ControllerBase
+public class AuthController : BaseController
 {
     private readonly IAuthService authService;
 
@@ -87,6 +89,21 @@ public class AuthController : ControllerBase
         {
             await authService.ResetPasswordAsync(request);
             return Ok(new { message = "Đổi mật khẩu thành công" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile(UpdateProfileRequest request)
+    {
+        try
+        {
+            var result = await authService.UpdateProfileAsync(request, CurrentUserId);
+            return Ok(result);
         }
         catch (Exception ex)
         {

@@ -25,6 +25,12 @@ public class ResetPasswordRequest
     public string NewPassword { get; set; } = "";
 }
 
+public class UpdateProfileRequest
+{
+    public string FullName { get; set; } = "";
+    public string? NewPassword { get; set; }
+}
+
 public class AuthResponse
 {
     public string AccessToken { get; set; } = "";

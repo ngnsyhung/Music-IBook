@@ -32,24 +32,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _updateProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // final auth = context.read<AuthProvider>();
-    // final success = await auth.updateProfile(
-    //   _nameController.text.trim(),
-    //   _passwordController.text.isNotEmpty ? _passwordController.text : null,
-    // );
-    //
-    // if (mounted) {
-    //   if (success) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(content: Text('Cập nhật hồ sơ thành công!')),
-    //     );
-    //     _passwordController.clear();
-    //   } else {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       SnackBar(content: Text('Lỗi: ${auth.error ?? "Không xác định"}')),
-    //     );
-    //   }
-    // }
+    final auth = context.read<AuthProvider>();
+    final success = await auth.updateProfile(
+      _nameController.text.trim(),
+      _passwordController.text.isNotEmpty ? _passwordController.text : null,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cập nhật hồ sơ thành công!')),
+      );
+      _passwordController.clear();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi: ${auth.error ?? "Không xác định"}')),
+      );
+    }
   }
 
   @override
