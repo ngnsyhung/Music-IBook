@@ -67,8 +67,8 @@ class _RhythmPainter extends CustomPainter {
 
   // ─── Layout constants ──────────────────────────────────────────────
   static const double kHitLineRatio = 0.28;
-  static const double kVisibleSeconds = 6.0;
   static const double kTopPad = 12.0;
+  static const double kPixelsPerSecond = 140.0; // Tốc độ cuộn chuẩn cho mọi kích thước màn hình
   
   late final List<String> _pitches;
   late final double _rowHeight;
@@ -90,28 +90,27 @@ class _RhythmPainter extends CustomPainter {
   }
 
   double get _elapsed => elapsedNotifier.value;
+  double get _visibleSeconds => canvasWidth / kPixelsPerSecond;
 
   double _secondToX(double second) {
     final hitLineX = canvasWidth * kHitLineRatio;
-    final pps = canvasWidth / kVisibleSeconds;
-    return hitLineX + (second - _elapsed) * pps;
+    return hitLineX + (second - _elapsed) * kPixelsPerSecond;
   }
 
   double _durationToWidth(String duration) {
-    final pps = canvasWidth / kVisibleSeconds;
     switch (duration) {
-      case 'whole':   return pps * 2.0;
-      case 'half':    return pps * 1.0;
-      case 'quarter': return pps * 0.65;
-      case 'eighth':  return pps * 0.4;
-      default:        return pps * 0.5;
+      case 'whole':   return kPixelsPerSecond * 2.0;
+      case 'half':    return kPixelsPerSecond * 1.0;
+      case 'quarter': return kPixelsPerSecond * 0.65;
+      case 'eighth':  return kPixelsPerSecond * 0.4;
+      default:        return kPixelsPerSecond * 0.5;
     }
   }
 
   @override
   void paint(Canvas canvas, Size size) {
     final hitLineX = canvasWidth * kHitLineRatio;
-    final pps = canvasWidth / kVisibleSeconds;
+    final pps = kPixelsPerSecond;
     final timingWindowPx = (kPracticeTimingWindowMs / 1000.0) * pps;
 
     _drawBackground(canvas);
@@ -135,7 +134,7 @@ class _RhythmPainter extends CustomPainter {
     final tp = TextPainter(textDirection: TextDirection.ltr);
 
     final startSec = (_elapsed - 1).floor();
-    final endSec = (_elapsed + kVisibleSeconds + 1).ceil();
+    final endSec = (_elapsed + _visibleSeconds + 1).ceil();
 
     for (int s = startSec; s <= endSec; s++) {
       final x = hitLineX + (s - _elapsed) * pps;
@@ -190,7 +189,7 @@ class _RhythmPainter extends CustomPainter {
     // Draw note blocks
     // Culling bounds
     final visibleStart = _elapsed - (canvasWidth * kHitLineRatio / pps) - 2.0;
-    final visibleEnd = _elapsed + kVisibleSeconds + 2.0;
+    final visibleEnd = _elapsed + _visibleSeconds + 2.0;
 
     for (int i = 0; i < notes.length; i++) {
       final note = notes[i];
