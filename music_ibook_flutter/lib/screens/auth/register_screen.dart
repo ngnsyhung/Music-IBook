@@ -165,6 +165,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: DropdownButton<String>(
                           value: role,
                           isExpanded: true,
+                          dropdownColor: Colors.white,
                           items: const [
                             DropdownMenuItem(value: 'Student', child: Text('STUDENT')),
                             DropdownMenuItem(value: 'Teacher', child: Text('TEACHER')),

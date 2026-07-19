@@ -28,6 +28,11 @@ class MusicAppTheme {
         surface: surfaceLight,
       ),
       scaffoldBackgroundColor: backgroundLight,
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: Colors.black,
+        selectionColor: Color(0x4D007BFF),
+        selectionHandleColor: Color(0xFF007BFF),
+      ),
       textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme)
           .copyWith(
             displayLarge: GoogleFonts.outfit(

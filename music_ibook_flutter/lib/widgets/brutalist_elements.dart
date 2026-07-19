@@ -92,7 +92,8 @@ class BrutalistInput extends StatelessWidget {
             : TextCapitalization.sentences,
         autocorrect: keyboardType != TextInputType.emailAddress,
         enableSuggestions: keyboardType != TextInputType.emailAddress,
-        style: const TextStyle(fontWeight: FontWeight.w500),
+        cursorColor: Colors.black,
+        style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.black38),
