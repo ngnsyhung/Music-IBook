@@ -5,6 +5,8 @@ class LessonNote {
   double startBeat;
   double durationBeat;
   int velocity;
+  int staff;
+  int voice;
   String note;
   String duration;
   String lyric;
@@ -17,6 +19,8 @@ class LessonNote {
     double? startBeat,
     double? durationBeat,
     this.velocity = 90,
+    this.staff = 0,
+    this.voice = 0,
     required this.note,
     required this.duration,
     required this.lyric,
@@ -35,6 +39,8 @@ class LessonNote {
       durationBeat: (json['durationBeat'] ?? _durationToBeat(duration))
           .toDouble(),
       velocity: json['velocity'] ?? 90,
+      staff: json['staff'] ?? 0,
+      voice: json['voice'] ?? 0,
       note: json['note'] ?? '',
       duration: duration,
       lyric: json['lyric'] ?? '',
@@ -48,6 +54,8 @@ class LessonNote {
       'startBeat': startBeat,
       'durationBeat': durationBeat,
       'velocity': velocity,
+      'staff': staff,
+      'voice': voice,
       'note': note,
       'duration': duration,
       'lyric': lyric,
@@ -62,6 +70,8 @@ class LessonNote {
     double? startBeat,
     double? durationBeat,
     int? velocity,
+    int? staff,
+    int? voice,
     String? note,
     String? duration,
     String? lyric,
@@ -74,6 +84,8 @@ class LessonNote {
       startBeat: startBeat ?? this.startBeat,
       durationBeat: durationBeat ?? this.durationBeat,
       velocity: velocity ?? this.velocity,
+      staff: staff ?? this.staff,
+      voice: voice ?? this.voice,
       note: note ?? this.note,
       duration: duration ?? this.duration,
       lyric: lyric ?? this.lyric,
@@ -95,12 +107,18 @@ class LessonNote {
         return 1;
       case 'dotted_eighth':
         return 0.75;
+      case 'quarter_triplet':
+        return 2 / 3;
       case 'eighth':
         return 0.5;
+      case 'eighth_triplet':
+        return 1 / 3;
       case 'dotted_sixteenth':
         return 0.375;
       case 'sixteenth':
         return 0.25;
+      case 'sixteenth_triplet':
+        return 1 / 6;
       case 'thirty_second':
         return 0.125;
       case 'sixty_fourth':

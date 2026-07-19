@@ -8,6 +8,8 @@ class MusicLesson {
   String clef;
   String keySignature;
   String timeSignature;
+  String timeSignatureMap;
+  int tempo;
   String theoryTitle;
   String theoryContent;
   String practiceGuide;
@@ -24,6 +26,8 @@ class MusicLesson {
     this.clef = 'treble',
     this.keySignature = 'D Major',
     this.timeSignature = '2/4',
+    this.timeSignatureMap = '',
+    this.tempo = 80,
     this.theoryTitle = '',
     this.theoryContent = '',
     this.practiceGuide = '',
@@ -40,6 +44,8 @@ class MusicLesson {
       clef: 'treble',
       keySignature: 'D Major',
       timeSignature: '2/4',
+      timeSignatureMap: '',
+      tempo: 80,
     );
   }
 
@@ -53,6 +59,8 @@ class MusicLesson {
       clef: json['clef'] ?? 'treble',
       keySignature: json['keySignature'] ?? 'D Major',
       timeSignature: json['timeSignature'] ?? '2/4',
+      timeSignatureMap: json['timeSignatureMap'] ?? '',
+      tempo: json['tempo'] ?? 80,
       theoryTitle: json['theoryTitle'] ?? '',
       theoryContent: json['theoryContent'] ?? '',
       practiceGuide: json['practiceGuide'] ?? '',
@@ -70,6 +78,8 @@ class MusicLesson {
       'clef': clef,
       'keySignature': keySignature,
       'timeSignature': timeSignature,
+      'timeSignatureMap': timeSignatureMap,
+      'tempo': tempo,
       'theoryTitle': theoryTitle,
       'theoryContent': theoryContent,
       'practiceGuide': practiceGuide,

@@ -10,6 +10,8 @@
         public string Clef { get; set; } = "treble";
         public string KeySignature { get; set; } = "D Major";
         public string TimeSignature { get; set; } = "2/4";
+        public string TimeSignatureMap { get; set; } = "";
+        public int Tempo { get; set; } = 80;
 
         public string TheoryTitle { get; set; } = "";
         public string TheoryContent { get; set; } = "";

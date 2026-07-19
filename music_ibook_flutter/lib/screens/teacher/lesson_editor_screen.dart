@@ -8,6 +8,10 @@ import 'package:provider/provider.dart';
 import '../../models/lesson.dart';
 import '../../models/lesson_note.dart';
 import '../../providers/lesson_provider.dart';
+import '../../services/midi_service.dart';
+import '../../services/note_audio_service.dart';
+import '../../services/score_engraving_service.dart';
+import '../../widgets/engraved_score.dart';
 import '../../widgets/piano_keyboard.dart';
 
 class _DurationOption {
@@ -163,6 +167,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
   double _selectedDurationBeat = 1;
   double _playheadBeat = 1;
   double _playStartBeat = 1;
+  double _lastPlayedBeat = 1;
   double _zoom = 1;
   bool _isRecording = false;
   bool _isPlaying = false;
@@ -170,18 +175,54 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
   int? _selectedIndex;
   int _octaveShift = 0;
 
-  final _timeSignatures = const ['2/4', '3/4', '4/4', '6/8'];
-  final _keySignatures = const [
+  final List<String> _timeSignatures = [
+    '2/2',
+    '2/4',
+    '3/4',
+    '4/4',
+    '5/4',
+    '6/8',
+    '7/8',
+    '9/8',
+    '12/8',
+  ];
+  final List<String> _keySignatures = [
+    'Cb Major',
+    'Gb Major',
+    'Db Major',
+    'Ab Major',
+    'Eb Major',
+    'Bb Major',
+    'F Major',
     'C Major',
     'G Major',
     'D Major',
     'A Major',
-    'F Major',
+    'E Major',
+    'B Major',
+    'F# Major',
+    'C# Major',
+    'Ab Minor',
+    'Eb Minor',
+    'Bb Minor',
+    'F Minor',
+    'C Minor',
+    'G Minor',
+    'D Minor',
+    'A Minor',
+    'E Minor',
+    'B Minor',
+    'F# Minor',
+    'C# Minor',
+    'G# Minor',
+    'D# Minor',
+    'A# Minor',
   ];
 
   @override
   void initState() {
     super.initState();
+    NoteAudioService.init();
     if (widget.lessonId != null) {
       Future.microtask(_loadLesson);
     } else {
@@ -216,9 +257,13 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       _timeSignature = lesson.timeSignature.isEmpty
           ? '4/4'
           : lesson.timeSignature;
+      if (lesson.timeSignatureMap.isEmpty) {
+        lesson.timeSignatureMap = '1:$_timeSignature';
+      }
       _keySignature = lesson.keySignature.isEmpty
           ? 'C Major'
           : lesson.keySignature;
+      _tempo = lesson.tempo.clamp(40, 220);
       _playheadBeat = 1;
     });
   }
@@ -233,7 +278,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     return note.copyWith(
       startBeat: startBeat,
       durationBeat: durationBeat,
-      second: _beatToSeconds(startBeat),
+      second: note.second >= 0 ? note.second : _beatToSeconds(startBeat),
       duration: _beatToDurationName(durationBeat),
     );
   }
@@ -286,6 +331,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     _playheadBeat = max(_playheadBeat, beat);
     if (_isPlaying) {
       _playStartBeat = _playheadBeat;
+      _lastPlayedBeat = _playheadBeat - 0.001;
       _playClock
         ..reset()
         ..start();
@@ -349,6 +395,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       setState(() {
         _isPlaying = false;
         _playStartBeat = _playheadBeat;
+        _lastPlayedBeat = _playheadBeat;
       });
       return;
     }
@@ -360,6 +407,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       _isPlaying = true;
       _isRecording = false;
       _playStartBeat = _playheadBeat;
+      _lastPlayedBeat = _playheadBeat - 0.001;
     });
     _startTicker();
     _startMetronome();
@@ -374,6 +422,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       _isPlaying = false;
       _playheadBeat = 1;
       _playStartBeat = 1;
+      _lastPlayedBeat = 1;
     });
   }
 
@@ -385,6 +434,26 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       final beat = _isRecording
           ? _elapsedToBeat(clock.elapsed)
           : _playStartBeat + clock.elapsed.inMilliseconds / _msPerBeat;
+
+      if (!_isRecording && _isPlaying) {
+        for (final note in _lesson.notes) {
+          if (note.startBeat >= _lastPlayedBeat && note.startBeat < beat) {
+            NoteAudioService.playNote(note.note);
+          }
+        }
+        double maxEndBeat = 4.0;
+        for (final n in _lesson.notes) {
+          if (n.startBeat + n.durationBeat > maxEndBeat) {
+            maxEndBeat = n.startBeat + n.durationBeat;
+          }
+        }
+        if (beat > maxEndBeat + 1.5) {
+          _stopTransport();
+          return;
+        }
+      }
+      _lastPlayedBeat = beat;
+
       if (mounted) setState(() => _playheadBeat = beat);
     });
   }
@@ -404,7 +473,9 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
 
     final note = _keyboardNotes[event.logicalKey];
     if (note != null) {
-      _insertNote(_shiftOctave(note));
+      final shifted = _shiftOctave(note);
+      NoteAudioService.playNote(shifted);
+      _insertNote(shifted);
       return;
     }
 
@@ -441,7 +512,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     return '${match.group(1)}$octave';
   }
 
-  void _insertNote(String note, {double? beat, int velocity = 90}) {
+  void _insertNote(String note, {double? beat, int velocity = 90, int? staff}) {
     _focusNode.requestFocus();
     final rawBeat =
         beat ??
@@ -454,6 +525,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       startBeat: startBeat,
       durationBeat: _selectedDurationBeat,
       velocity: velocity,
+      staff: staff ?? (_noteMidiNumber(note) < 60 ? 1 : 0),
       note: note,
       duration: _beatToDurationName(_selectedDurationBeat),
       lyric: _lyric.text.trim(),
@@ -469,6 +541,25 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       _lyric.clear();
       _chord.clear();
     });
+  }
+
+  int _noteMidiNumber(String note) {
+    final match = RegExp(r'^([A-G])([#b]?)(-?\d+)$').firstMatch(note);
+    if (match == null) return 60;
+    const pitchClasses = {
+      'C': 0,
+      'D': 2,
+      'E': 4,
+      'F': 5,
+      'G': 7,
+      'A': 9,
+      'B': 11,
+    };
+    var pitchClass = pitchClasses[match.group(1)]!;
+    if (match.group(2) == '#') pitchClass++;
+    if (match.group(2) == 'b') pitchClass--;
+    final octave = int.parse(match.group(3)!);
+    return (octave + 1) * 12 + pitchClass;
   }
 
   void _updateNote(int index, LessonNote updated) {
@@ -507,6 +598,46 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     _insertNote(note.note, beat: note.startBeat + note.durationBeat);
   }
 
+  Future<void> _importMidi() async {
+    try {
+      final result = await MidiService.importMidiFile();
+      if (result == null) return;
+
+      _pushUndo();
+      setState(() {
+        if (result.notes.isNotEmpty) {
+          _lesson.notes = result.notes;
+        }
+        _tempo = result.tempo.clamp(40, 220).toInt();
+        if (!_timeSignatures.contains(result.timeSignature)) {
+          _timeSignatures.add(result.timeSignature);
+        }
+        _timeSignature = result.timeSignature;
+        _lesson.timeSignatureMap = result.timeSignatureMap;
+        if (!_keySignatures.contains(result.keySignature)) {
+          _keySignatures.add(result.keySignature);
+        }
+        _keySignature = result.keySignature;
+        _selectedIndex = null;
+        _playheadBeat = 1;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Đã nhập thành công ${result.notes.length} nốt từ file MIDI',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi nhập file MIDI: $e')));
+    }
+  }
+
   Future<void> _save({bool publish = false}) async {
     final syncedNotes = _lesson.notes.map(_syncNoteTiming).toList()
       ..sort((a, b) => a.startBeat.compareTo(b.startBeat));
@@ -516,6 +647,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       ..composer = _composer.text.trim()
       ..keySignature = _keySignature
       ..timeSignature = _timeSignature
+      ..tempo = _tempo
       ..practiceGuide = _description.text.trim()
       ..notes = syncedNotes;
 
@@ -549,6 +681,14 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
   }
 
   String _beatToDurationName(double beat) {
+    const triplets = [
+      (name: 'quarter_triplet', beats: 2 / 3),
+      (name: 'eighth_triplet', beats: 1 / 3),
+      (name: 'sixteenth_triplet', beats: 1 / 6),
+    ];
+    for (final triplet in triplets) {
+      if ((beat - triplet.beats).abs() < 0.02) return triplet.name;
+    }
     return _durationOptions
         .reduce(
           (a, b) => (a.beats - beat).abs() <= (b.beats - beat).abs() ? a : b,
@@ -557,6 +697,14 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
   }
 
   double _durationNameToBeat(String duration) {
+    switch (duration) {
+      case 'quarter_triplet':
+        return 2 / 3;
+      case 'eighth_triplet':
+        return 1 / 3;
+      case 'sixteenth_triplet':
+        return 1 / 6;
+    }
     for (final option in _durationOptions) {
       if (option.name == duration) return option.beats;
     }
@@ -567,12 +715,15 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
   void dispose() {
     _ticker?.cancel();
     _metronomeTimer?.cancel();
+    _playClock.stop();
+    _recordClock.stop();
     _focusNode.dispose();
     _title.dispose();
     _composer.dispose();
     _description.dispose();
     _lyric.dispose();
     _chord.dispose();
+    NoteAudioService.dispose();
     super.dispose();
   }
 
@@ -594,6 +745,11 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
           title: const Text('Soạn nhạc cho giáo viên'),
           actions: [
             IconButton(
+              tooltip: 'Nhập từ file MIDI',
+              onPressed: _importMidi,
+              icon: const Icon(Icons.file_open_outlined),
+            ),
+            IconButton(
               tooltip: 'Lưu',
               onPressed: provider.loading ? null : _save,
               icon: const Icon(Icons.save),
@@ -613,6 +769,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
                 isRecording: _isRecording,
                 canUndo: _undoStack.isNotEmpty,
                 canRedo: _redoStack.isNotEmpty,
+                hasSelection: _selectedIndex != null,
                 onPlay: _togglePlay,
                 onStop: _stopTransport,
                 onRecord: _toggleRecord,
@@ -620,7 +777,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
                 onRedo: _redo,
                 onDelete: _deleteSelected,
                 onDuplicate: _duplicateSelected,
-                hasSelection: _selectedIndex != null,
+                onImportMidi: _importMidi,
               ),
               Expanded(
                 child: ListView(
@@ -640,8 +797,10 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
                         setState(() => _tempo = value.clamp(40, 220).toInt());
                         if (_isRecording || _isPlaying) _startMetronome();
                       },
-                      onTimeSignatureChanged: (value) =>
-                          setState(() => _timeSignature = value),
+                      onTimeSignatureChanged: (value) => setState(() {
+                        _timeSignature = value;
+                        _lesson.timeSignatureMap = '1:$value';
+                      }),
                       onKeySignatureChanged: (value) =>
                           setState(() => _keySignature = value),
                       onMetronomeChanged: (value) {
@@ -687,12 +846,16 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
                       child: _CompositionStaff(
                         notes: _lesson.notes,
                         playheadBeat: _playheadBeat,
-                        beatsPerMeasure: _beatsPerMeasure,
+                        tempo: _tempo,
+                        timeSignature: _timeSignature,
+                        timeSignatureMap: _lesson.timeSignatureMap,
+                        keySignature: _keySignature,
                         zoom: _zoom,
                         selectedIndex: _selectedIndex,
                         onSelect: (index) =>
                             setState(() => _selectedIndex = index),
-                        onCreate: (note, beat) => _insertNote(note, beat: beat),
+                        onCreate: (note, beat, staff) =>
+                            _insertNote(note, beat: beat, staff: staff),
                         onChange: _updateNote,
                       ),
                     ),
@@ -769,6 +932,7 @@ class _TransportBar extends StatelessWidget {
   final VoidCallback onRedo;
   final VoidCallback onDelete;
   final VoidCallback onDuplicate;
+  final VoidCallback onImportMidi;
 
   const _TransportBar({
     required this.isPlaying,
@@ -783,6 +947,7 @@ class _TransportBar extends StatelessWidget {
     required this.onRedo,
     required this.onDelete,
     required this.onDuplicate,
+    required this.onImportMidi,
   });
 
   @override
@@ -833,6 +998,15 @@ class _TransportBar extends StatelessWidget {
               tooltip: 'Xóa nốt',
               onPressed: hasSelection ? onDelete : null,
               icon: const Icon(Icons.delete_outline),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              onPressed: onImportMidi,
+              icon: const Icon(Icons.file_open_outlined, size: 18),
+              label: const Text('Nhập MIDI'),
+              style: FilledButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
             ),
           ],
         ),
@@ -1057,10 +1231,10 @@ class _EditorSettings extends StatelessWidget {
                 const Icon(Icons.zoom_out, size: 18),
                 Expanded(
                   child: Slider(
-                    value: zoom,
-                    min: 0.7,
-                    max: 1.8,
-                    divisions: 11,
+                    value: zoom.clamp(0.6, 3.6),
+                    min: 0.6,
+                    max: 3.6,
+                    divisions: 30,
                     onChanged: onZoomChanged,
                   ),
                 ),
@@ -1128,17 +1302,23 @@ class _DurationButton extends StatelessWidget {
 class _CompositionStaff extends StatelessWidget {
   final List<LessonNote> notes;
   final double playheadBeat;
-  final double beatsPerMeasure;
+  final int tempo;
+  final String timeSignature;
+  final String timeSignatureMap;
+  final String keySignature;
   final double zoom;
   final int? selectedIndex;
   final ValueChanged<int> onSelect;
-  final void Function(String note, double beat) onCreate;
+  final void Function(String note, double beat, int staff) onCreate;
   final void Function(int index, LessonNote updated) onChange;
 
   const _CompositionStaff({
     required this.notes,
     required this.playheadBeat,
-    required this.beatsPerMeasure,
+    required this.tempo,
+    required this.timeSignature,
+    required this.timeSignatureMap,
+    required this.keySignature,
     required this.zoom,
     required this.selectedIndex,
     required this.onSelect,
@@ -1151,12 +1331,21 @@ class _CompositionStaff extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final contentWidth = constraints.maxWidth;
-        final contentHeight = _StaffGeometry.contentHeight(
+        final scoreLayout = ScoreEngravingService.layout(
           notes: notes,
-          playheadBeat: playheadBeat,
-          beatsPerMeasure: beatsPerMeasure,
+          minimumEndBeat: playheadBeat,
+          timeSignature: timeSignature,
+          timeSignatureMap: timeSignatureMap,
+          keySignature: keySignature,
           width: contentWidth,
+          style: EngravingStyle(
+            systemHeight: 270 * max(0.85, zoom),
+            staffSpace: 10 * max(0.85, zoom),
+            grandStaffDistance: 100 * max(0.85, zoom),
+            minimumSliceWidth: 20 * max(0.75, zoom),
+          ),
         );
+        final contentHeight = scoreLayout.height;
         return SingleChildScrollView(
           child: SizedBox(
             width: contentWidth,
@@ -1164,49 +1353,61 @@ class _CompositionStaff extends StatelessWidget {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTapUp: (details) {
-                final hit = _StaffGeometry.hitTestNote(
+                final hit = EngravedScoreGeometry.hitTest(
+                  scoreLayout,
                   details.localPosition,
-                  notes,
-                  contentWidth,
-                  beatsPerMeasure,
                 );
                 if (hit != null) {
                   onSelect(hit);
                   return;
                 }
-                final beat = _StaffGeometry.xToBeat(
-                  details.localPosition,
-                  contentWidth,
-                  beatsPerMeasure,
+                final beat = scoreLayout.beatAt(
+                  details.localPosition.dx,
+                  details.localPosition.dy,
                 );
-                final note = _StaffGeometry.yToNote(details.localPosition.dy);
-                onCreate(note, beat);
+                final staff = EngravedScoreGeometry.staffAt(
+                  scoreLayout,
+                  details.localPosition,
+                );
+                final note = EngravedScoreGeometry.noteAt(
+                  scoreLayout,
+                  details.localPosition,
+                  staff,
+                );
+                onCreate(note, beat, staff);
               },
               onPanUpdate: (details) {
                 if (selectedIndex == null) return;
                 final selected = notes[selectedIndex!];
-                final beat = _StaffGeometry.xToBeat(
-                  details.localPosition,
-                  contentWidth,
-                  beatsPerMeasure,
+                final beat = scoreLayout.beatAt(
+                  details.localPosition.dx,
+                  details.localPosition.dy,
                 );
-                final note = _StaffGeometry.yToNote(details.localPosition.dy);
+                final staff = EngravedScoreGeometry.staffAt(
+                  scoreLayout,
+                  details.localPosition,
+                );
+                final note = EngravedScoreGeometry.noteAt(
+                  scoreLayout,
+                  details.localPosition,
+                  staff,
+                );
                 onChange(
                   selectedIndex!,
                   selected.copyWith(
                     startBeat: beat.clamp(1, 256).toDouble(),
-                    second: 0,
+                    second: -1,
                     note: note,
+                    staff: staff,
                   ),
                 );
               },
               onLongPressMoveUpdate: (details) {
                 if (selectedIndex == null) return;
                 final selected = notes[selectedIndex!];
-                final beat = _StaffGeometry.xToBeat(
-                  details.localPosition,
-                  contentWidth,
-                  beatsPerMeasure,
+                final beat = scoreLayout.beatAt(
+                  details.localPosition.dx,
+                  details.localPosition.dy,
                 );
                 onChange(
                   selectedIndex!,
@@ -1217,11 +1418,11 @@ class _CompositionStaff extends StatelessWidget {
               },
               child: CustomPaint(
                 size: Size(contentWidth, contentHeight),
-                painter: _StaffPainter(
-                  notes: notes,
+                painter: EngravedScorePainter(
+                  layout: scoreLayout,
+                  tempo: tempo,
                   playheadBeat: playheadBeat,
-                  beatsPerMeasure: beatsPerMeasure,
-                  selectedIndex: selectedIndex,
+                  selectedSourceIndex: selectedIndex,
                 ),
               ),
             ),
@@ -1229,488 +1430,6 @@ class _CompositionStaff extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-class _StaffGeometry {
-  static const left = 84.0;
-  static const pageTop = 72.0;
-  static const top = pageTop;
-  static const lineGap = 14.0;
-  static const beatWidth = 54.0;
-  static const systemHeight = 152.0;
-  static const right = 28.0;
-  static final pitchOffsets = <String, double>{
-    'E5': -lineGap * 2,
-    'D#5': -lineGap * 1.75,
-    'D5': -lineGap * 1.5,
-    'C#5': -lineGap * 1.25,
-    'C5': -lineGap,
-    'B4': -lineGap * 0.5,
-    'A#4': -lineGap * 0.25,
-    'A4': 0,
-    'G#4': lineGap * 0.25,
-    'G4': lineGap * 0.5,
-    'F#4': lineGap,
-    'F4': lineGap,
-    'E4': lineGap * 1.5,
-    'D#4': lineGap * 1.75,
-    'D4': lineGap * 2,
-    'C#4': lineGap * 2.25,
-    'C4': lineGap * 2.5,
-  };
-
-  static int measuresPerSystem(double width, double beatsPerMeasure) {
-    final usableWidth = max(beatWidth, width - left - right - 92);
-    final measureWidth = beatWidth * beatsPerMeasure;
-    return max(1, (usableWidth / measureWidth).floor());
-  }
-
-  static double beatsPerSystem(double width, double beatsPerMeasure) {
-    return measuresPerSystem(width, beatsPerMeasure) * beatsPerMeasure;
-  }
-
-  static double systemTop(int system) => pageTop + system * systemHeight;
-
-  static int systemForBeat(double beat, double width, double beatsPerMeasure) {
-    final bps = beatsPerSystem(width, beatsPerMeasure);
-    return max(0, ((beat - 1) / bps).floor());
-  }
-
-  static Offset beatToOffset(
-    double beat,
-    String note,
-    double width,
-    double beatsPerMeasure,
-  ) {
-    final bps = beatsPerSystem(width, beatsPerMeasure);
-    final beatZero = max(0.0, beat - 1);
-    final system = (beatZero / bps).floor();
-    final localBeat = beatZero - system * bps;
-    return Offset(left + 92 + localBeat * beatWidth, noteToY(note, system));
-  }
-
-  static double xToBeat(Offset point, double width, double beatsPerMeasure) {
-    final bps = beatsPerSystem(width, beatsPerMeasure);
-    final rawSystem = ((point.dy - pageTop + 46) / systemHeight).floor();
-    final system = max(0, rawSystem);
-    final localBeat = ((point.dx - left - 92) / beatWidth)
-        .clamp(0, bps - 0.0001)
-        .toDouble();
-    return 1 + system * bps + localBeat;
-  }
-
-  static String yToNote(double y) {
-    final system = max(0, ((y - pageTop + 46) / systemHeight).floor());
-    final localY = y - systemTop(system);
-    return pitchOffsets.entries
-        .reduce(
-          (a, b) => (a.value - localY).abs() < (b.value - localY).abs() ? a : b,
-        )
-        .key;
-  }
-
-  static double noteToY(String note, [int system = 0]) {
-    return systemTop(system) + (pitchOffsets[note] ?? lineGap);
-  }
-
-  static int? hitTestNote(
-    Offset point,
-    List<LessonNote> notes,
-    double width,
-    double beatsPerMeasure,
-  ) {
-    for (var i = notes.length - 1; i >= 0; i--) {
-      final note = notes[i];
-      final offset = beatToOffset(
-        note.startBeat,
-        note.note,
-        width,
-        beatsPerMeasure,
-      );
-      final rect = Rect.fromCenter(
-        center: offset,
-        width: 34,
-        height: 28,
-      ).inflate(8);
-      if (rect.contains(point)) return i;
-    }
-    return null;
-  }
-
-  static double contentHeight({
-    required List<LessonNote> notes,
-    required double playheadBeat,
-    required double beatsPerMeasure,
-    required double width,
-  }) {
-    final lastNoteBeat = notes.isEmpty
-        ? beatsPerMeasure * 4
-        : notes.map((n) => n.startBeat + n.durationBeat).reduce(max);
-    final maxBeat = max(playheadBeat, lastNoteBeat);
-    final systems = systemForBeat(maxBeat, width, beatsPerMeasure) + 1;
-    return pageTop + systems * systemHeight + 24;
-  }
-}
-
-class _StaffPainter extends CustomPainter {
-  final List<LessonNote> notes;
-  final double playheadBeat;
-  final double beatsPerMeasure;
-  final int? selectedIndex;
-
-  _StaffPainter({
-    required this.notes,
-    required this.playheadBeat,
-    required this.beatsPerMeasure,
-    required this.selectedIndex,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
-    final staffPaint = Paint()
-      ..color = Colors.black87
-      ..strokeWidth = 1.2;
-    final gridPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.08)
-      ..strokeWidth = 1;
-
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = const Color(0xFFFFFAF0),
-    );
-    if (_paintWrappedStaff(canvas, size, textPainter, staffPaint, gridPaint)) {
-      return;
-    }
-
-    for (var i = 0; i < 5; i++) {
-      final y = _StaffGeometry.top + i * _StaffGeometry.lineGap;
-      canvas.drawLine(
-        Offset(_StaffGeometry.left, y),
-        Offset(size.width - 28, y),
-        staffPaint,
-      );
-    }
-
-    _drawText(
-      canvas,
-      textPainter,
-      '𝄞',
-      _StaffGeometry.left + 8,
-      _StaffGeometry.top - 36,
-      48,
-      FontWeight.w500,
-    );
-
-    final totalBeats = max(
-      16.0,
-      (size.width - _StaffGeometry.left) / _StaffGeometry.beatWidth,
-    );
-    for (var beat = 1.0; beat <= totalBeats; beat += 1) {
-      final x =
-          _StaffGeometry.left + 92 + (beat - 1) * _StaffGeometry.beatWidth;
-      final isMeasure = ((beat - 1) % beatsPerMeasure).abs() < 0.01;
-      canvas.drawLine(
-        Offset(x, _StaffGeometry.top - 48),
-        Offset(x, _StaffGeometry.top + _StaffGeometry.lineGap * 5.6),
-        isMeasure ? staffPaint : gridPaint,
-      );
-      if (isMeasure) {
-        final measure = ((beat - 1) / beatsPerMeasure).floor() + 1;
-        _drawText(
-          canvas,
-          textPainter,
-          '$measure',
-          x + 4,
-          _StaffGeometry.top - 66,
-          11,
-          FontWeight.bold,
-          color: Colors.black54,
-        );
-      }
-    }
-
-    for (var i = 0; i < notes.length; i++) {
-      final note = notes[i];
-      final x =
-          _StaffGeometry.left +
-          92 +
-          (note.startBeat - 1) * _StaffGeometry.beatWidth;
-      final y = _StaffGeometry.noteToY(note.note);
-      final selected = selectedIndex == i;
-      final notePaint = Paint()
-        ..color = selected ? Colors.deepOrange : Colors.black
-        ..style = PaintingStyle.fill;
-      final outline = Paint()
-        ..color = selected ? Colors.deepOrange : Colors.black
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = selected ? 2.2 : 1.4;
-      final width = max(18.0, note.durationBeat * _StaffGeometry.beatWidth);
-
-      if (note.chord.isNotEmpty) {
-        _drawText(
-          canvas,
-          textPainter,
-          note.chord,
-          x - 10,
-          _StaffGeometry.top - 84,
-          12,
-          FontWeight.bold,
-          color: Colors.indigo,
-        );
-      }
-
-      canvas.drawLine(Offset(x, y), Offset(x, y - 44), outline);
-      canvas.drawOval(
-        Rect.fromCenter(center: Offset(x, y), width: 18, height: 12),
-        note.durationBeat >= 2 ? outline : notePaint,
-      );
-      canvas.drawLine(
-        Offset(x + 12, y + 18),
-        Offset(x + width, y + 18),
-        Paint()
-          ..color = selected ? Colors.deepOrange : Colors.blueGrey
-          ..strokeWidth = 5
-          ..strokeCap = StrokeCap.round,
-      );
-
-      _drawText(
-        canvas,
-        textPainter,
-        note.note,
-        x - 13,
-        y + 24,
-        10,
-        FontWeight.bold,
-        color: selected ? Colors.deepOrange : Colors.black54,
-      );
-      if (note.lyric.isNotEmpty) {
-        _drawText(
-          canvas,
-          textPainter,
-          note.lyric,
-          x - 18,
-          _StaffGeometry.top + 92,
-          12,
-          FontWeight.normal,
-          color: selected ? Colors.deepOrange : Colors.black87,
-        );
-      }
-    }
-
-    final playheadX =
-        _StaffGeometry.left +
-        92 +
-        (playheadBeat - 1) * _StaffGeometry.beatWidth;
-    canvas.drawLine(
-      Offset(playheadX, _StaffGeometry.top - 72),
-      Offset(playheadX, _StaffGeometry.top + _StaffGeometry.lineGap * 6.4),
-      Paint()
-        ..color = Colors.redAccent
-        ..strokeWidth = 2.5,
-    );
-  }
-
-  bool _paintWrappedStaff(
-    Canvas canvas,
-    Size size,
-    TextPainter textPainter,
-    Paint staffPaint,
-    Paint gridPaint,
-  ) {
-    final bps = _StaffGeometry.beatsPerSystem(size.width, beatsPerMeasure);
-    final playheadSystems =
-        _StaffGeometry.systemForBeat(
-          playheadBeat,
-          size.width,
-          beatsPerMeasure,
-        ) +
-        1;
-    final noteSystems = notes.isEmpty
-        ? 1
-        : _StaffGeometry.systemForBeat(
-                notes.map((n) => n.startBeat + n.durationBeat).reduce(max),
-                size.width,
-                beatsPerMeasure,
-              ) +
-              1;
-    final totalSystems = max(playheadSystems, noteSystems);
-
-    for (var system = 0; system < totalSystems; system++) {
-      final top = _StaffGeometry.systemTop(system);
-      final rightEdge = size.width - _StaffGeometry.right;
-
-      for (var i = 0; i < 5; i++) {
-        final y = top + i * _StaffGeometry.lineGap;
-        canvas.drawLine(
-          Offset(_StaffGeometry.left, y),
-          Offset(rightEdge, y),
-          staffPaint,
-        );
-      }
-
-      _drawText(
-        canvas,
-        textPainter,
-        '𝄞',
-        _StaffGeometry.left + 8,
-        top - 36,
-        48,
-        FontWeight.w500,
-      );
-
-      for (var localBeat = 0.0; localBeat <= bps; localBeat += 1) {
-        final x =
-            _StaffGeometry.left + 92 + localBeat * _StaffGeometry.beatWidth;
-        if (x > rightEdge) continue;
-        final globalBeat = 1 + system * bps + localBeat;
-        final isMeasure =
-            ((globalBeat - 1) % beatsPerMeasure).abs() < 0.01 ||
-            (bps - localBeat).abs() < 0.01;
-        canvas.drawLine(
-          Offset(x, top - 48),
-          Offset(x, top + _StaffGeometry.lineGap * 5.6),
-          isMeasure ? staffPaint : gridPaint,
-        );
-        if (isMeasure && localBeat < bps) {
-          final measure = ((globalBeat - 1) / beatsPerMeasure).floor() + 1;
-          _drawText(
-            canvas,
-            textPainter,
-            '$measure',
-            x + 4,
-            top - 66,
-            11,
-            FontWeight.bold,
-            color: Colors.black54,
-          );
-        }
-      }
-    }
-
-    for (var i = 0; i < notes.length; i++) {
-      final note = notes[i];
-      final offset = _StaffGeometry.beatToOffset(
-        note.startBeat,
-        note.note,
-        size.width,
-        beatsPerMeasure,
-      );
-      final system = _StaffGeometry.systemForBeat(
-        note.startBeat,
-        size.width,
-        beatsPerMeasure,
-      );
-      final top = _StaffGeometry.systemTop(system);
-      final selected = selectedIndex == i;
-      final notePaint = Paint()
-        ..color = selected ? Colors.deepOrange : Colors.black
-        ..style = PaintingStyle.fill;
-      final outline = Paint()
-        ..color = selected ? Colors.deepOrange : Colors.black
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = selected ? 2.2 : 1.4;
-      final width = max(18.0, note.durationBeat * _StaffGeometry.beatWidth);
-
-      if (note.chord.isNotEmpty) {
-        _drawText(
-          canvas,
-          textPainter,
-          note.chord,
-          offset.dx - 10,
-          top - 84,
-          12,
-          FontWeight.bold,
-          color: Colors.indigo,
-        );
-      }
-
-      canvas.drawLine(
-        Offset(offset.dx, offset.dy),
-        Offset(offset.dx, offset.dy - 44),
-        outline,
-      );
-      canvas.drawOval(
-        Rect.fromCenter(center: offset, width: 18, height: 12),
-        note.durationBeat >= 2 ? outline : notePaint,
-      );
-      canvas.drawLine(
-        Offset(offset.dx + 12, offset.dy + 18),
-        Offset(offset.dx + width, offset.dy + 18),
-        Paint()
-          ..color = selected ? Colors.deepOrange : Colors.blueGrey
-          ..strokeWidth = 5
-          ..strokeCap = StrokeCap.round,
-      );
-
-      _drawText(
-        canvas,
-        textPainter,
-        note.note,
-        offset.dx - 13,
-        offset.dy + 24,
-        10,
-        FontWeight.bold,
-        color: selected ? Colors.deepOrange : Colors.black54,
-      );
-      if (note.lyric.isNotEmpty) {
-        _drawText(
-          canvas,
-          textPainter,
-          note.lyric,
-          offset.dx - 18,
-          top + 92,
-          12,
-          FontWeight.normal,
-          color: selected ? Colors.deepOrange : Colors.black87,
-        );
-      }
-    }
-
-    final playheadOffset = _StaffGeometry.beatToOffset(
-      playheadBeat,
-      'A4',
-      size.width,
-      beatsPerMeasure,
-    );
-    final playheadTop = _StaffGeometry.systemTop(
-      _StaffGeometry.systemForBeat(playheadBeat, size.width, beatsPerMeasure),
-    );
-    canvas.drawLine(
-      Offset(playheadOffset.dx, playheadTop - 72),
-      Offset(playheadOffset.dx, playheadTop + _StaffGeometry.lineGap * 6.4),
-      Paint()
-        ..color = Colors.redAccent
-        ..strokeWidth = 2.5,
-    );
-
-    return true;
-  }
-
-  void _drawText(
-    Canvas canvas,
-    TextPainter painter,
-    String text,
-    double x,
-    double y,
-    double size,
-    FontWeight weight, {
-    Color color = Colors.black,
-  }) {
-    painter.text = TextSpan(
-      text: text,
-      style: TextStyle(color: color, fontSize: size, fontWeight: weight),
-    );
-    painter.layout();
-    painter.paint(canvas, Offset(x, y));
-  }
-
-  @override
-  bool shouldRepaint(covariant _StaffPainter oldDelegate) {
-    return oldDelegate.notes != notes ||
-        oldDelegate.playheadBeat != playheadBeat ||
-        oldDelegate.selectedIndex != selectedIndex;
   }
 }
 
@@ -1765,8 +1484,7 @@ class _TimelinePainter extends CustomPainter {
       Offset.zero & size,
       Paint()..color = const Color(0xFF101820),
     );
-    final beatWidth = 36 * zoom;
-    final laneTop = 34.0;
+    final beatWidth = 72 * zoom;
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
     for (var beat = 1.0; beat < size.width / beatWidth + 3; beat += 1) {
@@ -1791,20 +1509,49 @@ class _TimelinePainter extends CustomPainter {
       }
     }
 
-    for (final note in notes) {
+    final staggerMap = <int, int>{};
+    final beatGroupCount = <double, int>{};
+    for (var i = 0; i < notes.length; i++) {
+      final b = (notes[i].startBeat * 16).round() / 16;
+      final idx = beatGroupCount[b] ?? 0;
+      staggerMap[i] = idx;
+      beatGroupCount[b] = idx + 1;
+    }
+
+    for (var i = 0; i < notes.length; i++) {
+      final note = notes[i];
       final x = 18 + (note.startBeat - 1) * beatWidth;
-      final w = max(12.0, note.durationBeat * beatWidth);
+      final staggerIdx = staggerMap[i] ?? 0;
+      final laneTop = staggerIdx == 0 ? 10.0 : (staggerIdx == 1 ? 34.0 : 58.0);
+
+      double nextBeat = 999999.0;
+      for (var j = i + 1; j < notes.length; j++) {
+        if (notes[j].startBeat > note.startBeat + 0.01) {
+          nextBeat = notes[j].startBeat;
+          break;
+        }
+      }
+      final rawW = note.durationBeat * beatWidth;
+      final maxAllowedW = (nextBeat < 999999.0)
+          ? (nextBeat - note.startBeat) * beatWidth - 3.0
+          : rawW;
+      final w = max(16.0, min(rawW, maxAllowedW));
+
       final rect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(x, laneTop, w, 24),
-        const Radius.circular(6),
+        Rect.fromLTWH(x, laneTop, w, 20),
+        const Radius.circular(5),
       );
       canvas.drawRRect(rect, Paint()..color = const Color(0xFF39A0ED));
       textPainter.text = TextSpan(
         text: note.note,
-        style: const TextStyle(color: Colors.white, fontSize: 10),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
       );
-      textPainter.layout(maxWidth: w);
-      textPainter.paint(canvas, Offset(x + 4, laneTop + 6));
+      textPainter.layout(maxWidth: w - 2);
+      textPainter.paint(canvas, Offset(x + 3, laneTop + 4));
     }
 
     final playX = 18 + (playheadBeat - 1) * beatWidth;

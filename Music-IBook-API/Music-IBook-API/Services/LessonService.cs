@@ -18,7 +18,7 @@ public class LessonService : ILessonService
     public async Task<List<MusicLesson>> GetAllAsync()
     {
         return await db.Lessons
-            .Include(x => x.Notes.OrderBy(n => n.Second))
+            .Include(x => x.Notes.OrderBy(n => n.StartBeat).ThenBy(n => n.Note))
             .Where(x => x.IsPublished)
             .ToListAsync();
     }
@@ -26,7 +26,7 @@ public class LessonService : ILessonService
     public async Task<MusicLesson?> GetByIdAsync(long id)
     {
         return await db.Lessons
-            .Include(x => x.Notes.OrderBy(n => n.Second))
+            .Include(x => x.Notes.OrderBy(n => n.StartBeat).ThenBy(n => n.Note))
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
@@ -40,6 +40,8 @@ public class LessonService : ILessonService
             Clef = request.Clef,
             KeySignature = request.KeySignature,
             TimeSignature = request.TimeSignature,
+            TimeSignatureMap = request.TimeSignatureMap,
+            Tempo = request.Tempo,
             TheoryTitle = request.TheoryTitle,
             TheoryContent = request.TheoryContent,
             PracticeGuide = request.PracticeGuide,
@@ -63,6 +65,8 @@ public class LessonService : ILessonService
         lesson.Clef = request.Clef;
         lesson.KeySignature = request.KeySignature;
         lesson.TimeSignature = request.TimeSignature;
+        lesson.TimeSignatureMap = request.TimeSignatureMap;
+        lesson.Tempo = request.Tempo;
         lesson.TheoryTitle = request.TheoryTitle;
         lesson.TheoryContent = request.TheoryContent;
         lesson.PracticeGuide = request.PracticeGuide;
@@ -111,6 +115,11 @@ public class LessonService : ILessonService
         {
             LessonId = lessonId,
             Second = request.Second,
+            StartBeat = request.StartBeat,
+            DurationBeat = request.DurationBeat,
+            Velocity = request.Velocity,
+            Staff = request.Staff,
+            Voice = request.Voice,
             Note = request.Note,
             Duration = request.Duration,
             Lyric = request.Lyric,
@@ -196,6 +205,11 @@ public class LessonService : ILessonService
         {
             LessonId = lessonId,
             Second = x.Second,
+            StartBeat = x.StartBeat,
+            DurationBeat = x.DurationBeat,
+            Velocity = x.Velocity,
+            Staff = x.Staff,
+            Voice = x.Voice,
             Note = x.Note,
             Duration = x.Duration,
             Lyric = x.Lyric,

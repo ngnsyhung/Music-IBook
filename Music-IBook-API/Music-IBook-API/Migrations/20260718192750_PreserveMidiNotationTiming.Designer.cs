@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Music_IBook_API.Models;
 
@@ -11,9 +12,11 @@ using Music_IBook_API.Models;
 namespace Music_IBook_API.Migrations
 {
     [DbContext(typeof(MusicIBookDbContext))]
-    partial class MusicIBookDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260718192750_PreserveMidiNotationTiming")]
+    partial class PreserveMidiNotationTiming
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -96,16 +99,10 @@ namespace Music_IBook_API.Migrations
                     b.Property<double>("Second")
                         .HasColumnType("float");
 
-                    b.Property<int>("Staff")
-                        .HasColumnType("int");
-
                     b.Property<double>("StartBeat")
                         .HasColumnType("float");
 
                     b.Property<int>("Velocity")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Voice")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -166,10 +163,6 @@ namespace Music_IBook_API.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TimeSignature")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TimeSignatureMap")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
