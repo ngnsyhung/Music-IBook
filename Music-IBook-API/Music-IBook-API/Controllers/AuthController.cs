@@ -73,8 +73,13 @@ public class AuthController : BaseController
     {
         try
         {
-            var token = await authService.ForgotPasswordAsync(request);
-            return Ok(new { resetToken = token });
+            var otp = await authService.ForgotPasswordAsync(request);
+            return Ok(new
+            {
+                otp = otp,
+                message = "Mã OTP của bạn là bên dưới. Mã có hiệu lực trong 15 phút.",
+                expiresInMinutes = 15
+            });
         }
         catch (Exception ex)
         {

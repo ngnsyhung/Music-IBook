@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class BrutalistButton extends StatefulWidget {
   final Widget child;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const BrutalistButton({super.key, required this.child, required this.onTap});
 
@@ -15,13 +15,16 @@ class _BrutalistButtonState extends State<BrutalistButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isDisabled = widget.onTap == null;
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
+      onTapDown: isDisabled ? null : (_) => setState(() => _isPressed = true),
+      onTapUp: isDisabled
+          ? null
+          : (_) {
+              setState(() => _isPressed = false);
+              widget.onTap!();
+            },
+      onTapCancel: isDisabled ? null : () => setState(() => _isPressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeInOut,

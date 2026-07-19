@@ -44,7 +44,12 @@ GoRouter buildRouter(AuthProvider auth) {
       GoRoute(
         path: '/reset-password',
         builder: (_, state) {
-          final token = state.uri.queryParameters['token'] ?? '';
+          // OTP có thể đến từ extra map (ForgotPasswordScreen)
+          // hoặc query param (backward compat)
+          final extra = state.extra as Map<String, dynamic>?;
+          final token = extra?['otp'] as String? ??
+              state.uri.queryParameters['token'] ??
+              '';
           return ResetPasswordScreen(token: token);
         },
       ),

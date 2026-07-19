@@ -68,9 +68,8 @@ class AuthService {
       '/api/auth/forgot-password',
       data: {'email': email},
     );
-    return res.data['resetToken']?.toString() ??
-        res.data['message']?.toString() ??
-        '';
+    // Server trả về { otp, message, expiresInMinutes }
+    return res.data['otp']?.toString() ?? '';
   }
 
   Future<void> resetPassword(String token, String newPassword) async {

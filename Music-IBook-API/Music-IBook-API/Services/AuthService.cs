@@ -226,11 +226,13 @@ public class AuthService : IAuthService
         if (user.AuthProvider == "Google")
             throw new Exception("Tài khoản Google không thể đổi mật khẩu tại đây.");
 
+        // Tạo OTP 6 chữ số ngẫu nhiên
+        var otp = Random.Shared.Next(100000, 999999).ToString();
         var resetToken = new PasswordResetToken
         {
             UserId = user.Id,
-            Token = Guid.NewGuid().ToString("N"),
-            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(30),
+            Token = otp,
+            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(15),
             IsUsed = false
         };
 

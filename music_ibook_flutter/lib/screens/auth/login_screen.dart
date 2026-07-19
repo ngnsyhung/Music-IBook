@@ -166,19 +166,44 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: TextButton(
-                        onPressed: auth.loading ? null : () => context.go('/register'),
-                        child: const Text(
-                          "CREATE NEW ACCOUNT",
-                          style: TextStyle(
-                            color: Colors.black54,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                            decoration: TextDecoration.underline,
+                    const SizedBox(height: 12),
+                    BrutalistButton(
+                      onTap: auth.loading ? null : () => context.go('/forgot-password'),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.lock_reset, color: Colors.black54, size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            "FORGOT PASSWORD",
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              letterSpacing: 1.2,
+                            ),
                           ),
-                        ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    BrutalistButton(
+                      onTap: auth.loading ? null : () => context.go('/register'),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.person_add_outlined, color: Colors.black54, size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            "CREATE NEW ACCOUNT",
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 32),
