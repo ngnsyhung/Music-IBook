@@ -8,6 +8,7 @@ import '../screens/auth/reset_password_screen.dart';
 import '../screens/teacher/teacher_dashboard.dart';
 import '../screens/teacher/lesson_editor_screen.dart';
 import '../screens/teacher/progress/student_detail_screen.dart';
+import '../screens/teacher/progress/lesson_analytics_screen.dart';
 import '../screens/student/student_home.dart';
 import '../screens/student/lesson_detail_screen.dart';
 import '../screens/student/practice/practice_screen.dart';
@@ -44,8 +45,8 @@ GoRouter buildRouter(AuthProvider auth) {
       GoRoute(
         path: '/reset-password',
         builder: (_, state) {
-          final token = state.uri.queryParameters['token'] ?? '';
-          return ResetPasswordScreen(token: token);
+          final email = state.uri.queryParameters['email'] ?? '';
+          return ResetPasswordScreen(email: email);
         },
       ),
       GoRoute(path: '/teacher', builder: (_, _) => const TeacherDashboard()),
@@ -67,6 +68,13 @@ GoRouter buildRouter(AuthProvider auth) {
           return StudentDetailScreen(studentId: id);
         },
       ),
+      GoRoute(
+        path: '/teacher/student/:studentId/lesson/:lessonId/analytics',
+        builder: (_, state) => LessonAnalyticsScreen(
+          studentId: int.parse(state.pathParameters['studentId']!),
+          lessonId: int.parse(state.pathParameters['lessonId']!),
+        ),
+      ),
       GoRoute(path: '/student', builder: (_, _) => const StudentHome()),
       GoRoute(
         path: '/student/lesson/:id',
@@ -79,7 +87,14 @@ GoRouter buildRouter(AuthProvider auth) {
         path: '/student/practice/:id',
         builder: (_, state) {
           final id = int.parse(state.pathParameters['id']!);
-          return PracticeScreen(lessonId: id);
+          int? queryInt(String name) =>
+              int.tryParse(state.uri.queryParameters[name] ?? '');
+          return PracticeScreen(
+            lessonId: id,
+            sectionId: queryInt('sectionId'),
+            exerciseId: queryInt('exerciseId'),
+            assignmentId: queryInt('assignmentId'),
+          );
         },
       ),
       GoRoute(

@@ -112,6 +112,7 @@ class EngravedScorePainter extends CustomPainter {
   final Color backgroundColor;
   final String title;
   final String composer;
+  final ScrollController? scrollController;
 
   EngravedScorePainter({
     required this.layout,
@@ -122,6 +123,7 @@ class EngravedScorePainter extends CustomPainter {
     this.backgroundColor = const Color(0xFFFFFAF0),
     this.title = '',
     this.composer = '',
+    this.scrollController,
     super.repaint,
   });
 
@@ -158,11 +160,22 @@ class EngravedScorePainter extends CustomPainter {
       );
     }
 
+    final visibleTop = scrollController?.hasClients == true
+        ? scrollController!.offset
+        : 0.0;
+    final visibleBottom = scrollController?.hasClients == true
+        ? scrollController!.offset + scrollController!.position.viewportDimension
+        : double.infinity;
+
     for (final system in layout.systems) {
+      if (system.top > visibleBottom + 500 ||
+          system.top + layout.style.systemHeight < visibleTop - 500) {
+        continue;
+      }
       _drawSystem(canvas, system, staffPaint, textPainter);
     }
-    _drawNotesAndRests(canvas, staffPaint, textPainter);
-    _drawBeams(canvas);
+    _drawNotesAndRests(canvas, staffPaint, textPainter, visibleTop, visibleBottom);
+    _drawBeams(canvas, visibleTop, visibleBottom);
     _drawPlayhead(canvas);
   }
 
@@ -250,8 +263,14 @@ class EngravedScorePainter extends CustomPainter {
     Canvas canvas,
     Paint staffPaint,
     TextPainter textPainter,
+    double visibleTop,
+    double visibleBottom,
   ) {
     for (final system in layout.systems) {
+      if (system.top > visibleBottom + 500 ||
+          system.top + layout.style.systemHeight < visibleTop - 500) {
+        continue;
+      }
       for (final measureLayout in system.measures) {
         final measure = measureLayout.measure;
         final noteheadShifts = _noteheadShifts(measure.notes);
@@ -271,7 +290,63 @@ class EngravedScorePainter extends CustomPainter {
             textPainter,
           );
         }
+        _drawUnbeamedChords(canvas, measureLayout, system, measure.notes);
       }
+    }
+  }
+
+  void _drawUnbeamedChords(
+    Canvas canvas,
+    EngravedMeasureLayout measureLayout,
+    EngravedSystem system,
+    List<EngravedNoteFragment> notes,
+  ) {
+    final chords = <String, List<EngravedNoteFragment>>{};
+    for (final note in notes) {
+      if (note.beamGroup != null ||
+          note.duration == 'whole' ||
+          note.durationBeat >= 3.75) {
+        continue;
+      }
+      final key = '${note.startBeat}:${note.staff}:${note.voice}';
+      chords.putIfAbsent(key, () => []).add(note);
+    }
+
+    for (final chord in chords.values) {
+      final stemUp = _stemUp(chord.first, measureLayout.measure);
+      final headYs = chord.map(
+        (note) => EngravedScoreGeometry.noteY(
+          layout,
+          system.index,
+          note.staff,
+          note.source.note,
+        ),
+      );
+      final stemStartY = stemUp ? headYs.reduce(max) : headYs.reduce(min);
+      final stemEndY = stemUp ? headYs.reduce(min) - 36 : headYs.reduce(max) + 36;
+      final x = measureLayout.xForBeat(chord.first.startBeat);
+      final hasSelected = chord.any((n) => n.sourceIndex == selectedSourceIndex);
+      final hasHighlighted = chord.any((n) => n.sourceIndex == highlightedSourceIndex);
+      final color = hasSelected
+          ? Colors.deepOrange
+          : hasHighlighted
+          ? Colors.orange
+          : Colors.black;
+      final outline = Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = hasSelected ? 2 : 1.35;
+
+      _drawStemAndFlagsForChord(
+        canvas,
+        x,
+        stemStartY,
+        stemEndY,
+        stemUp,
+        chord.first.duration,
+        outline,
+        color,
+      );
     }
   }
 
@@ -415,10 +490,6 @@ class EngravedScorePainter extends CustomPainter {
     if (note.duration.startsWith('dotted_')) {
       canvas.drawCircle(Offset(x + 12, y - 1), 1.8, fill);
     }
-    if (!whole && note.beamGroup == null) {
-      final stemUp = _stemUp(note, measureLayout.measure);
-      _drawStemAndFlags(canvas, x, y, stemUp, note.duration, outline, color);
-    }
     if (note.duration.contains('triplet')) {
       _text(
         canvas,
@@ -472,7 +543,11 @@ class EngravedScorePainter extends CustomPainter {
     }
   }
 
-  void _drawBeams(Canvas canvas) {
+  void _drawBeams(
+    Canvas canvas,
+    double visibleTop,
+    double visibleBottom,
+  ) {
     final groups =
         <
           int,
@@ -485,6 +560,10 @@ class EngravedScorePainter extends CustomPainter {
           >
         >{};
     for (final system in layout.systems) {
+      if (system.top > visibleBottom + 500 ||
+          system.top + layout.style.systemHeight < visibleTop - 500) {
+        continue;
+      }
       for (final measure in system.measures) {
         for (final note in measure.measure.notes) {
           if (note.beamGroup != null) {
@@ -749,22 +828,22 @@ class EngravedScorePainter extends CustomPainter {
     return y >= middle;
   }
 
-  void _drawStemAndFlags(
+  void _drawStemAndFlagsForChord(
     Canvas canvas,
     double x,
-    double y,
+    double stemStartY,
+    double stemEndY,
     bool stemUp,
     String duration,
     Paint outline,
     Color color,
   ) {
     final stemX = x + (stemUp ? 7 : -7);
-    final stemEnd = y + (stemUp ? -36 : 36);
-    canvas.drawLine(Offset(stemX, y), Offset(stemX, stemEnd), outline);
+    canvas.drawLine(Offset(stemX, stemStartY), Offset(stemX, stemEndY), outline);
     final flags = _flagCount(duration);
     final direction = stemUp ? 1.0 : -1.0;
     for (var flag = 0; flag < flags; flag++) {
-      final anchor = stemEnd + (stemUp ? flag * 5.5 : -flag * 5.5);
+      final anchor = stemEndY + (stemUp ? flag * 5.5 : -flag * 5.5);
       final path = Path()
         ..moveTo(stemX, anchor)
         ..cubicTo(

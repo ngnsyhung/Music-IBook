@@ -1,14 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/lesson_note.dart';
+import '../utils/music_xml_generator.dart';
 
 class MidiParserResult {
   final List<LessonNote> notes;
   final int tempo;
+  final String tempoMap;
   final String timeSignature;
   final String timeSignatureMap;
   final String keySignature;
@@ -16,6 +19,7 @@ class MidiParserResult {
   const MidiParserResult({
     required this.notes,
     required this.tempo,
+    required this.tempoMap,
     required this.timeSignature,
     required this.timeSignatureMap,
     required this.keySignature,
@@ -94,6 +98,15 @@ class _SignatureEvent<T> {
   const _SignatureEvent(this.tick, this.value, this.sequence);
 }
 
+class _MidiTextEvent {
+  final int tick;
+  final int track;
+  final String text;
+  final int sequence;
+
+  const _MidiTextEvent(this.tick, this.track, this.text, this.sequence);
+}
+
 class _KeySignature {
   final int sharpsOrFlats;
   final bool minor;
@@ -102,6 +115,7 @@ class _KeySignature {
 }
 
 class MidiService {
+  static const _ticksPerNotationBeat = 192;
   static const _sharpNoteNames = [
     'C',
     'C#',
@@ -190,7 +204,7 @@ class MidiService {
     if (bytes == null) {
       throw const FormatException('Không thể đọc dữ liệu file MIDI.');
     }
-    return parseMidiBytes(bytes);
+    return compute(parseMidiBytes, bytes);
   }
 
   /// Parse Standard MIDI File format 0 và 1.
@@ -272,6 +286,8 @@ class MidiService {
     final tempoEvents = <_TempoEvent>[];
     final timeSignatureEvents = <_SignatureEvent<String>>[];
     final keySignatureEvents = <_SignatureEvent<_KeySignature>>[];
+    final lyricEvents = <_MidiTextEvent>[];
+    final trackNames = <int, String>{};
     var eventSequence = 0;
     var parsedTrackCount = 0;
 
@@ -361,6 +377,13 @@ class MidiService {
           final dataStart = position;
           position += length;
 
+          String metaText() => utf8
+              .decode(
+                bytes.sublist(dataStart, dataStart + length),
+                allowMalformed: true,
+              )
+              .trim();
+
           if (metaType == 0x51 && length == 3) {
             final microsecondsPerBeat =
                 (bytes[dataStart] << 16) |
@@ -392,6 +415,16 @@ class MidiService {
                 eventSequence++,
               ),
             );
+          } else if (metaType == 0x03 && length > 0) {
+            final name = metaText();
+            if (name.isNotEmpty) trackNames[trackIndex] = name;
+          } else if (metaType == 0x05 && length > 0) {
+            final lyric = metaText();
+            if (lyric.isNotEmpty) {
+              lyricEvents.add(
+                _MidiTextEvent(currentTick, trackIndex, lyric, eventSequence++),
+              );
+            }
           }
           continue;
         }
@@ -500,16 +533,13 @@ class MidiService {
     rawNotes.sort((a, b) {
       var comparison = a.startTick.compareTo(b.startTick);
       if (comparison != 0) return comparison;
-      comparison = a.noteNumber.compareTo(b.noteNumber);
-      if (comparison != 0) return comparison;
       comparison = a.track.compareTo(b.track);
       if (comparison != 0) return comparison;
-      return a.channel.compareTo(b.channel);
+      comparison = a.channel.compareTo(b.channel);
+      if (comparison != 0) return comparison;
+      return a.noteNumber.compareTo(b.noteNumber);
     });
 
-    if (keySignatureEvents.isEmpty && rawNotes.isNotEmpty) {
-      initialKey = _inferKeySignature(rawNotes);
-    }
     final preferFlats = initialKey.sharpsOrFlats < 0;
     final quantizedNotes = _quantizeNotes(
       rawNotes,
@@ -517,21 +547,40 @@ class MidiService {
       timeSignatureEvents,
       initialTimeSignature,
     );
-    _assignStavesAndVoices(quantizedNotes);
+    _assignTrackVoices(quantizedNotes);
+
+    lyricEvents.sort((left, right) {
+      final tick = left.tick.compareTo(right.tick);
+      return tick != 0 ? tick : left.sequence.compareTo(right.sequence);
+    });
+    final lyricsByTrackAndTick = <String, String>{};
+    for (final event in lyricEvents) {
+      lyricsByTrackAndTick.putIfAbsent(
+        '${event.track}:${event.tick}',
+        () => event.text,
+      );
+    }
+    final consumedLyrics = <String>{};
 
     final notes = quantizedNotes
         .map((quantized) {
           final raw = quantized.raw;
+          final lyricKey = '${raw.track}:${raw.startTick}';
+          final lyric = consumedLyrics.add(lyricKey)
+              ? lyricsByTrackAndTick[lyricKey] ?? ''
+              : '';
           return LessonNote(
             second: _ticksToSeconds(raw.startTick, ticksPerBeat, tempoEvents),
             startBeat: _cleanNumber(quantized.startBeat),
             durationBeat: _cleanNumber(quantized.durationBeat),
             velocity: raw.velocity,
+            track: raw.track,
+            trackName: trackNames[raw.track] ?? '',
             staff: quantized.staff,
             voice: quantized.voice,
             note: _midiNoteToName(raw.noteNumber, preferFlats: preferFlats),
             duration: _beatToDurationName(quantized.durationBeat),
-            lyric: '',
+            lyric: lyric,
             chord: '',
           );
         })
@@ -543,12 +592,36 @@ class MidiService {
       ticksPerBeat,
       initialTimeSignature,
     );
+    final tempoMap = _buildTempoMap(
+      tempoEvents,
+      ticksPerBeat,
+      initialTempoMicroseconds,
+    );
     return MidiParserResult(
       notes: notes,
       tempo: (60000000 / initialTempoMicroseconds).round(),
+      tempoMap: tempoMap,
       timeSignature: initialTimeSignature,
       timeSignatureMap: timeSignatureMap,
-      keySignature: keyMap[initialKey.sharpsOrFlats] ?? 'C Major',
+      keySignature: keySignatureEvents.isEmpty
+          ? ''
+          : keyMap[initialKey.sharpsOrFlats] ?? '',
+    );
+  }
+
+  /// Converts a Standard MIDI File directly to a MusicXML document.
+  /// No title, composer, annotations, chord symbols or fingering are added.
+  static String convertToMusicXml(Uint8List bytes) {
+    final result = parseMidiBytes(bytes);
+    return MusicXmlGenerator.generate(
+      result.notes,
+      title: '',
+      composer: '',
+      timeSignature: result.timeSignature,
+      timeSignatureMap: result.timeSignatureMap,
+      keySignature: result.keySignature,
+      tempo: result.tempo,
+      tempoMap: result.tempoMap,
     );
   }
 
@@ -747,155 +820,45 @@ class MidiService {
     return bestError <= log(1.35) ? best : rawBeat;
   }
 
-  static void _assignStavesAndVoices(List<_QuantizedNote> notes) {
-    final onsetGroups = <double, List<_QuantizedNote>>{};
-    for (final note in notes) {
-      onsetGroups.putIfAbsent(_cleanNumber(note.startBeat), () => []).add(note);
-    }
-
-    for (final group in onsetGroups.values) {
-      group.sort((a, b) => a.raw.noteNumber.compareTo(b.raw.noteNumber));
-      if (group.length == 1) {
-        group.first.staff = group.first.raw.noteNumber < 60 ? 1 : 0;
-        continue;
-      }
-
-      var largestGap = 0;
-      var splitAfter = -1;
-      for (var i = 0; i < group.length - 1; i++) {
-        final gap = group[i + 1].raw.noteNumber - group[i].raw.noteNumber;
-        if (gap > largestGap) {
-          largestGap = gap;
-          splitAfter = i;
-        }
-      }
-
-      if (largestGap >= 7 &&
-          group.first.raw.noteNumber <= 64 &&
-          group.last.raw.noteNumber >= 60) {
-        for (var i = 0; i < group.length; i++) {
-          group[i].staff = i <= splitAfter ? 1 : 0;
-        }
-      } else if (group.last.raw.noteNumber < 60) {
-        for (final note in group) {
-          note.staff = 1;
-        }
-      } else if (group.first.raw.noteNumber >= 60) {
-        for (final note in group) {
-          note.staff = 0;
-        }
-      } else {
-        for (final note in group) {
-          note.staff = note.raw.noteNumber < 60 ? 1 : 0;
-        }
-      }
-    }
-
-    for (final staff in [0, 1]) {
+  static void _assignTrackVoices(List<_QuantizedNote> notes) {
+    final tracks = notes.map((note) => note.raw.track).toSet().toList()..sort();
+    for (final track in tracks) {
       final staffGroups = <double, List<_QuantizedNote>>{};
-      for (final note in notes.where((note) => note.staff == staff)) {
+      for (final note in notes.where((note) => note.raw.track == track)) {
+        note.staff = 0;
         staffGroups.putIfAbsent(note.startBeat, () => []).add(note);
       }
       final starts = staffGroups.keys.toList()..sort();
       final voiceEnds = <double>[];
       for (final start in starts) {
-        final group = staffGroups[start]!;
-        var voice = voiceEnds.indexWhere((end) => end <= start + 0.000001);
-        if (voice < 0) {
-          voice = voiceEnds.length;
-          voiceEnds.add(start);
+        final durationGroups = <int, List<_QuantizedNote>>{};
+        for (final note in staffGroups[start]!) {
+          final durationKey = (note.durationBeat * _ticksPerNotationBeat)
+              .round();
+          durationGroups.putIfAbsent(durationKey, () => []).add(note);
         }
-        voice = min(voice, 3);
-        final groupEnd = group
-            .map((note) => note.startBeat + note.durationBeat)
-            .reduce(max);
-        if (voice < voiceEnds.length) voiceEnds[voice] = groupEnd;
-        for (final note in group) {
-          note.voice = voice;
+        final groups = durationGroups.values.toList()
+          ..sort(
+            (left, right) =>
+                right.first.durationBeat.compareTo(left.first.durationBeat),
+          );
+        for (final group in groups) {
+          var voice = voiceEnds.indexWhere((end) => end <= start + 0.000001);
+          if (voice < 0) {
+            voice = voiceEnds.length;
+            voiceEnds.add(start);
+          }
+          voice = min(voice, 3);
+          final groupEnd = group
+              .map((note) => note.startBeat + note.durationBeat)
+              .reduce(max);
+          voiceEnds[voice] = max(voiceEnds[voice], groupEnd);
+          for (final note in group) {
+            note.voice = voice;
+          }
         }
       }
     }
-  }
-
-  static _KeySignature _inferKeySignature(List<_RawNote> notes) {
-    const majorProfile = [
-      6.35,
-      2.23,
-      3.48,
-      2.33,
-      4.38,
-      4.09,
-      2.52,
-      5.19,
-      2.39,
-      3.66,
-      2.29,
-      2.88,
-    ];
-    const minorProfile = [
-      6.33,
-      2.68,
-      3.52,
-      5.38,
-      2.60,
-      3.53,
-      2.54,
-      4.75,
-      3.98,
-      2.69,
-      3.34,
-      3.17,
-    ];
-    const majorSharps = [0, 7, 2, -3, 4, -1, 6, 1, -4, 3, -2, 5];
-    const minorSharps = [-3, 4, -1, 6, 1, -4, 3, -2, 5, 0, 7, 2];
-    final histogram = List<double>.filled(12, 0);
-    for (final note in notes) {
-      histogram[note.noteNumber % 12] +=
-          (note.endTick - note.startTick) * (0.5 + note.velocity / 127);
-    }
-
-    double correlation(List<double> profile, int root) {
-      final rotated = List<double>.generate(
-        12,
-        (pitchClass) => profile[(pitchClass - root + 12) % 12],
-      );
-      final histogramMean = histogram.reduce((a, b) => a + b) / 12;
-      final profileMean = rotated.reduce((a, b) => a + b) / 12;
-      var numerator = 0.0;
-      var histogramVariance = 0.0;
-      var profileVariance = 0.0;
-      for (var i = 0; i < 12; i++) {
-        final histogramDelta = histogram[i] - histogramMean;
-        final profileDelta = rotated[i] - profileMean;
-        numerator += histogramDelta * profileDelta;
-        histogramVariance += histogramDelta * histogramDelta;
-        profileVariance += profileDelta * profileDelta;
-      }
-      final denominator = sqrt(histogramVariance * profileVariance);
-      return denominator == 0 ? 0 : numerator / denominator;
-    }
-
-    var bestScore = double.negativeInfinity;
-    var bestRoot = 0;
-    var bestMinor = false;
-    for (var root = 0; root < 12; root++) {
-      final majorScore = correlation(majorProfile, root);
-      if (majorScore > bestScore) {
-        bestScore = majorScore;
-        bestRoot = root;
-        bestMinor = false;
-      }
-      final minorScore = correlation(minorProfile, root);
-      if (minorScore > bestScore) {
-        bestScore = minorScore;
-        bestRoot = root;
-        bestMinor = true;
-      }
-    }
-    return _KeySignature(
-      bestMinor ? minorSharps[bestRoot] : majorSharps[bestRoot],
-      bestMinor,
-    );
   }
 
   static String _buildTimeSignatureMap(
@@ -912,6 +875,26 @@ class MidiService {
         .map(
           (tick) =>
               '${_cleanNumber(1 + tick / ticksPerBeat)}:${signatureAtTick[tick]}',
+        )
+        .join(';');
+  }
+
+  static String _buildTempoMap(
+    List<_TempoEvent> events,
+    int ticksPerBeat,
+    int initialMicrosecondsPerBeat,
+  ) {
+    final tempoAtTick = <int, int>{
+      0: (60000000 / initialMicrosecondsPerBeat).round(),
+    };
+    for (final event in events) {
+      tempoAtTick[event.tick] = (60000000 / event.microsecondsPerBeat).round();
+    }
+    final ticks = tempoAtTick.keys.toList()..sort();
+    return ticks
+        .map(
+          (tick) =>
+              '${_cleanNumber(1 + tick / ticksPerBeat)}:${tempoAtTick[tick]}',
         )
         .join(';');
   }

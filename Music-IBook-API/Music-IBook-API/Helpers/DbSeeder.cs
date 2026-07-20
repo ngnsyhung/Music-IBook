@@ -42,9 +42,6 @@ public static class DbSeeder
                 Clef = "treble",
                 KeySignature = "C Major",
                 TimeSignature = "4/4",
-                TheoryTitle = "Giới thiệu các nốt cơ bản",
-                TheoryContent = "Bài luyện này giúp bạn làm quen với các nốt Đồ Rê Mi Pha Son La Si trên bàn phím. Hãy lắng nghe nhịp điệu và bấm đúng thời điểm để đạt điểm cao nhất!",
-                PracticeGuide = "Mỗi nốt cách nhau 1.5 giây. Bấm đúng nốt trong vòng ±0.5 giây để được tính điểm.",
                 IsPublished = true,
                 AudioUrl = null
             };
@@ -81,9 +78,6 @@ public static class DbSeeder
                 Clef = "treble",
                 KeySignature = "C Major",
                 TimeSignature = "4/4",
-                TheoryTitle = "Giai điệu lấp lánh",
-                TheoryContent = "Bản nhạc quen thuộc giúp luyện nhịp phách. Bài này dài hơn và có nhịp độ nhanh hơn.",
-                PracticeGuide = "Bấm phím theo nhịp độ. Chú ý các nốt ngân dài ở cuối mỗi câu.",
                 IsPublished = true,
                 AudioUrl = null
             };
@@ -126,9 +120,6 @@ public static class DbSeeder
                 Clef = "treble",
                 KeySignature = "C Major",
                 TimeSignature = "4/4",
-                TheoryTitle = "Khúc khải hoàn",
-                TheoryContent = "Đây là một trích đoạn cực kỳ nổi tiếng từ Bản giao hưởng số 9 của Beethoven. Bài có nhiều nốt liền bậc rất tốt để luyện ngón.",
-                PracticeGuide = "Hãy chú ý nhịp điệu đều đặn. Các nốt D4 cuối câu ngân dài 1 chút.",
                 IsPublished = true,
                 AudioUrl = null
             };

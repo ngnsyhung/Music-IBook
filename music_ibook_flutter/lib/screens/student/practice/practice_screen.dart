@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/api_config.dart';
 import '../../../core/game_judge.dart';
 import '../../../models/lesson.dart';
+import '../../../models/lesson_authoring.dart';
 import '../../../models/practice.dart';
 import '../../../providers/lesson_provider.dart';
 import '../../../providers/student_provider.dart';
@@ -16,7 +17,17 @@ import '../../../widgets/rhythm_timeline.dart';
 
 class PracticeScreen extends StatefulWidget {
   final int lessonId;
-  const PracticeScreen({super.key, required this.lessonId});
+  final int? sectionId;
+  final int? exerciseId;
+  final int? assignmentId;
+
+  const PracticeScreen({
+    super.key,
+    required this.lessonId,
+    this.sectionId,
+    this.exerciseId,
+    this.assignmentId,
+  });
 
   @override
   State<PracticeScreen> createState() => _PracticeScreenState();
@@ -25,6 +36,8 @@ class PracticeScreen extends StatefulWidget {
 class _PracticeScreenState extends State<PracticeScreen>
     with TickerProviderStateMixin {
   MusicLesson? lesson;
+  LessonSection? _activeSection;
+  LessonExercise? _activeExercise;
 
   // ─── Game State ──────────────────────────────────────────────────
   bool isPlaying = false;
@@ -64,20 +77,27 @@ class _PracticeScreenState extends State<PracticeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
-    _feedbackOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _feedbackAnim!, curve: Curves.easeOut),
-    );
-    _feedbackSlide = Tween<double>(begin: 0.0, end: -30.0).animate(
-      CurvedAnimation(parent: _feedbackAnim!, curve: Curves.easeOut),
-    );
+    _feedbackOpacity = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _feedbackAnim!, curve: Curves.easeOut));
+    _feedbackSlide = Tween<double>(
+      begin: 0.0,
+      end: -30.0,
+    ).animate(CurvedAnimation(parent: _feedbackAnim!, curve: Curves.easeOut));
 
     Future.microtask(() async {
       if (!mounted) return;
-      lesson = await context.read<LessonProvider>().loadLesson(widget.lessonId);
+      final loaded = await context.read<LessonProvider>().loadLesson(
+        widget.lessonId,
+      );
+      lesson = loaded == null ? null : _prepareLesson(loaded);
       if (!mounted) return;
       setState(() {});
 
-      if (lesson?.audioUrl != null && lesson!.audioUrl!.isNotEmpty) {
+      if (_activeSection == null &&
+          lesson?.audioUrl != null &&
+          lesson!.audioUrl!.isNotEmpty) {
         final url = '${ApiConfig.baseUrl}${lesson!.audioUrl}';
         try {
           await _audioPlayer.setSource(UrlSource(url));
@@ -87,6 +107,84 @@ class _PracticeScreenState extends State<PracticeScreen>
         }
       }
     });
+  }
+
+  MusicLesson _prepareLesson(MusicLesson source) {
+    for (final exercise in source.exercises) {
+      if (exercise.id == widget.exerciseId) {
+        _activeExercise = exercise;
+        break;
+      }
+    }
+
+    final targetSectionId =
+        widget.sectionId ?? _activeExercise?.lessonSectionId;
+    for (final section in source.sections) {
+      if (section.id == targetSectionId) {
+        _activeSection = section;
+        break;
+      }
+    }
+    final section = _activeSection;
+    if (section == null) return source;
+
+    final hand = section.hand.toLowerCase();
+    final tempo = section.defaultTempo.clamp(30, 300);
+    final secondsPerBeat = 60 / tempo;
+    final scopedNotes = source.notes
+        .where((note) {
+          final inRange =
+              note.startBeat >= section.startBeat - 0.0001 &&
+              note.startBeat <= section.endBeat + 0.0001;
+          final correctHand = hand.contains('left') || hand.contains('trái')
+              ? note.staff == 1
+              : hand.contains('right') || hand.contains('phải')
+              ? note.staff == 0
+              : true;
+          return inRange && correctHand;
+        })
+        .map(
+          (note) => note.copyWith(
+            second: (note.startBeat - section.startBeat) * secondsPerBeat,
+            startBeat: note.startBeat - section.startBeat + 1,
+          ),
+        )
+        .toList();
+
+    return MusicLesson(
+      id: source.id,
+      teacherId: source.teacherId,
+      title: '${source.title} · ${section.title}',
+      composer: source.composer,
+      clef: source.clef,
+      keySignature: source.keySignature,
+      timeSignature: source.timeSignature,
+      timeSignatureMap: '',
+      tempo: tempo,
+      isPublished: source.isPublished,
+      notes: scopedNotes,
+      sections: [section],
+      annotations: source.annotations
+          .where(
+            (annotation) =>
+                annotation.startBeat >= section.startBeat - 0.0001 &&
+                annotation.startBeat <= section.endBeat + 0.0001,
+          )
+          .map(
+            (annotation) => LessonAnnotation(
+              id: annotation.id,
+              lessonId: annotation.lessonId,
+              startBeat: annotation.startBeat - section.startBeat + 1,
+              endBeat: annotation.endBeat == null
+                  ? null
+                  : annotation.endBeat! - section.startBeat + 1,
+              kind: annotation.kind,
+              text: annotation.text,
+            ),
+          )
+          .toList(),
+      exercises: _activeExercise == null ? const [] : [_activeExercise!],
+    );
   }
 
   void startCountdown() {
@@ -127,16 +225,16 @@ class _PracticeScreenState extends State<PracticeScreen>
     // Dùng chung Ticker 60fps cho cả chế độ có Audio và không có Audio để Timeline mượt tuyệt đối
     _ticker = createTicker((elapsed) {
       if (!mounted || !isPlaying) return;
-      
+
       // Kéo timeline lùi về -1.5s
       double t = (elapsed.inMicroseconds / 1000000.0) - 1.5;
       _elapsedNotifier.value = t;
-      
+
       if (t < 0) {
         durationSeconds = 0;
       } else {
         durationSeconds = t.floor();
-        
+
         // Bắt đầu nhạc khi thời gian đạt mốc 0.0
         if (_hasAudio && !audioStarted) {
           _audioPlayer.resume();
@@ -218,13 +316,15 @@ class _PracticeScreenState extends State<PracticeScreen>
     required double timingErrorMs,
     required bool advance,
   }) {
-    attempts.add(NoteAttemptRequest(
-      lessonNoteId: expected.id ?? 0,
-      playedNote: playedNote,
-      playedSecond: _elapsedNotifier.value,
-      judgeResult: result.label,
-      timingErrorMs: timingErrorMs,
-    ));
+    attempts.add(
+      NoteAttemptRequest(
+        lessonNoteId: expected.id ?? 0,
+        playedNote: playedNote,
+        playedSecond: _elapsedNotifier.value,
+        judgeResult: result.label,
+        timingErrorMs: timingErrorMs,
+      ),
+    );
 
     setState(() {
       judgeHistory[noteIndex] = result.label;
@@ -264,6 +364,7 @@ class _PracticeScreenState extends State<PracticeScreen>
       attempts,
       isExam: false,
       durationSeconds: durationSeconds,
+      studentAssignmentId: widget.assignmentId,
     );
     if (!mounted || result == null) return;
     _showResultDialog(result);
@@ -275,10 +376,19 @@ class _PracticeScreenState extends State<PracticeScreen>
 
     String grade;
     Color gradeColor;
-    if (pct >= 90) { grade = '⭐ Xuất sắc!'; gradeColor = Colors.amber; }
-    else if (pct >= 70) { grade = '👍 Tốt!'; gradeColor = Colors.greenAccent; }
-    else if (pct >= 50) { grade = '📖 Khá'; gradeColor = Colors.blueAccent; }
-    else { grade = '💪 Cần luyện thêm'; gradeColor = Colors.orange; }
+    if (pct >= 90) {
+      grade = '⭐ Xuất sắc!';
+      gradeColor = Colors.amber;
+    } else if (pct >= 70) {
+      grade = '👍 Tốt!';
+      gradeColor = Colors.greenAccent;
+    } else if (pct >= 50) {
+      grade = '📖 Khá';
+      gradeColor = Colors.blueAccent;
+    } else {
+      grade = '💪 Cần luyện thêm';
+      gradeColor = Colors.orange;
+    }
 
     showDialog(
       context: context,
@@ -286,33 +396,61 @@ class _PracticeScreenState extends State<PracticeScreen>
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF1A2433),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(grade, style: TextStyle(color: gradeColor, fontWeight: FontWeight.bold, fontSize: 22)),
+        title: Text(
+          grade,
+          style: TextStyle(
+            color: gradeColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('$score / $maxScore điểm',
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text(
+              '$score / $maxScore điểm',
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _statChip('✅ Đúng', correct.toString(), Colors.greenAccent),
                 _statChip('❌ Sai', wrong.toString(), Colors.redAccent),
-                _statChip('⏱ Thời gian', '${durationSeconds}s', Colors.blueAccent),
+                _statChip(
+                  '⏱ Thời gian',
+                  '${durationSeconds}s',
+                  Colors.blueAccent,
+                ),
               ],
             ),
             const SizedBox(height: 8),
-            Text('Độ chính xác: ${result.accuracy.toStringAsFixed(1)}%',
-                style: const TextStyle(color: Colors.white54, fontSize: 14)),
+            Text(
+              'Độ chính xác: ${result.accuracy.toStringAsFixed(1)}%',
+              style: const TextStyle(color: Colors.white54, fontSize: 14),
+            ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () { Navigator.pop(context); startPractice(); },
-            child: const Text('Thử lại', style: TextStyle(color: Colors.blueAccent)),
+            onPressed: () {
+              Navigator.pop(context);
+              startPractice();
+            },
+            child: const Text(
+              'Thử lại',
+              style: TextStyle(color: Colors.blueAccent),
+            ),
           ),
           ElevatedButton(
-            onPressed: () { Navigator.pop(context); context.pop(); },
+            onPressed: () {
+              Navigator.pop(context);
+              context.pop();
+            },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
             child: const Text('Hoàn thành'),
           ),
@@ -324,8 +462,18 @@ class _PracticeScreenState extends State<PracticeScreen>
   Widget _statChip(String label, String value, Color color) {
     return Column(
       children: [
-        Text(value, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white54, fontSize: 12),
+        ),
       ],
     );
   }
@@ -353,22 +501,30 @@ class _PracticeScreenState extends State<PracticeScreen>
       appBar: AppBar(
         backgroundColor: const Color(0xFF161B22),
         foregroundColor: Colors.white,
-        title: Text(l?.title ?? 'Luyện tập',
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          l?.title ?? 'Luyện tập',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
           child: isPlaying && l != null
               ? LinearProgressIndicator(
-                  value: l.notes.isEmpty ? 0 : currentNoteIndex / l.notes.length,
+                  value: l.notes.isEmpty
+                      ? 0
+                      : currentNoteIndex / l.notes.length,
                   backgroundColor: const Color(0xFF30363D),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00BCD4)),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF00BCD4),
+                  ),
                   minHeight: 4,
                 )
               : const SizedBox(height: 4),
         ),
       ),
       body: l == null
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF00BCD4)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF00BCD4)),
+            )
           : Stack(
               children: [
                 Column(
@@ -403,6 +559,8 @@ class _PracticeScreenState extends State<PracticeScreen>
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 1000),
                         child: PianoKeyboard(
+                          compact:
+                              MediaQuery.sizeOf(context).shortestSide < 600,
                           onPressed: press,
                           targetNote: isPlaying ? currentNote?.note : null,
                         ),
@@ -429,18 +587,22 @@ class _PracticeScreenState extends State<PracticeScreen>
                             child: Center(
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 28, vertical: 10),
+                                  horizontal: 28,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Color(_lastJudge!.colorValue)
-                                      .withValues(alpha: 0.92),
+                                  color: Color(
+                                    _lastJudge!.colorValue,
+                                  ).withValues(alpha: 0.92),
                                   borderRadius: BorderRadius.circular(30),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Color(_lastJudge!.colorValue)
-                                          .withValues(alpha: 0.4),
+                                      color: Color(
+                                        _lastJudge!.colorValue,
+                                      ).withValues(alpha: 0.4),
                                       blurRadius: 20,
                                       spreadRadius: 2,
-                                    )
+                                    ),
                                   ],
                                 ),
                                 child: Row(
@@ -449,9 +611,10 @@ class _PracticeScreenState extends State<PracticeScreen>
                                     Text(
                                       _lastJudge!.label,
                                       style: const TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white),
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(
@@ -459,9 +622,10 @@ class _PracticeScreenState extends State<PracticeScreen>
                                           ? '+${_lastJudge!.score}'
                                           : '${_lastJudge!.score}',
                                       style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white70),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white70,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -491,39 +655,51 @@ class _PracticeScreenState extends State<PracticeScreen>
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0xFF30363D)),
             ),
-            child: Row(children: [
-              const Icon(Icons.timer, color: Color(0xFF00BCD4), size: 16),
-              const SizedBox(width: 4),
-              ValueListenableBuilder<double>(
-                valueListenable: _elapsedNotifier,
-                builder: (context, elapsed, _) {
-                  return Text(
-                    _formatTime(elapsed),
-                    style: const TextStyle(
-                      color: Color(0xFF80DEEA),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      fontFamily: 'monospace',
-                    ),
-                  );
-                },
-              ),
-            ]),
+            child: Row(
+              children: [
+                const Icon(Icons.timer, color: Color(0xFF00BCD4), size: 16),
+                const SizedBox(width: 4),
+                ValueListenableBuilder<double>(
+                  valueListenable: _elapsedNotifier,
+                  builder: (context, elapsed, _) {
+                    return Text(
+                      _formatTime(elapsed),
+                      style: const TextStyle(
+                        color: Color(0xFF80DEEA),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontFamily: 'monospace',
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: 12),
 
           // Đúng/Sai
-          Row(children: [
-            const Icon(Icons.check_circle, color: Colors.greenAccent, size: 18),
-            const SizedBox(width: 3),
-            Text('$correct',
-                style: const TextStyle(color: Colors.white, fontSize: 16)),
-            const SizedBox(width: 10),
-            const Icon(Icons.cancel, color: Colors.redAccent, size: 18),
-            const SizedBox(width: 3),
-            Text('$wrong',
-                style: const TextStyle(color: Colors.white, fontSize: 16)),
-          ]),
+          Row(
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: Colors.greenAccent,
+                size: 18,
+              ),
+              const SizedBox(width: 3),
+              Text(
+                '$correct',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              const SizedBox(width: 10),
+              const Icon(Icons.cancel, color: Colors.redAccent, size: 18),
+              const SizedBox(width: 3),
+              Text(
+                '$wrong',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ],
+          ),
 
           const Spacer(),
 
@@ -558,13 +734,16 @@ class _PracticeScreenState extends State<PracticeScreen>
             Text(
               '${currentNote.note} (${currentNote.lyric})',
               style: const TextStyle(
-                  color: Colors.orangeAccent,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold),
+                color: Colors.orangeAccent,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ] else
-            const Text('Hoàn thành!',
-                style: TextStyle(color: Colors.greenAccent, fontSize: 16)),
+            const Text(
+              'Hoàn thành!',
+              style: TextStyle(color: Colors.greenAccent, fontSize: 16),
+            ),
         ],
       ),
     );
@@ -573,7 +752,7 @@ class _PracticeScreenState extends State<PracticeScreen>
   Widget _buildStartOverlay(MusicLesson l, int maxScore) {
     final isSmallScreen = MediaQuery.of(context).size.height < 500;
     return Container(
-      color: Colors.black.withOpacity(0.65), // Mờ đi để thấy bản nhạc
+      color: Colors.black.withValues(alpha: 0.65),
       alignment: Alignment.center,
       child: isCountingDown
           ? Text(
@@ -591,19 +770,38 @@ class _PracticeScreenState extends State<PracticeScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Luôn hiện Title
-                    Text(l.title,
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: isSmallScreen ? 20 : 22,
-                            fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center),
+                    Text(
+                      l.title,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: isSmallScreen ? 20 : 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (_activeExercise != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        _activeExercise!.instruction.isEmpty
+                            ? _activeExercise!.title
+                            : '${_activeExercise!.title}: ${_activeExercise!.instruction}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF80DEEA),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Text(
                       '${l.notes.length} nốt nhạc  ·  Điểm tối đa: $maxScore',
-                      style: TextStyle(color: Colors.white54, fontSize: isSmallScreen ? 13 : 14),
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: isSmallScreen ? 13 : 14,
+                      ),
                     ),
                     SizedBox(height: isSmallScreen ? 12 : 16),
-                    
+
                     if (!isSmallScreen) ...[
                       // Hướng dẫn hiển thị trực tiếp trên màn hình lớn
                       Container(
@@ -616,13 +814,39 @@ class _PracticeScreenState extends State<PracticeScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Cách chơi:', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+                            const Text(
+                              'Cách chơi:',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(height: 8),
-                            const _HintRow(icon: '━━', color: Color(0xFF00E5FF), text: 'Vạch xanh = vị trí cần bấm'),
-                            const _HintRow(icon: '⬛', color: Color(0xFF2979FF), text: 'Ô màu xanh = nốt sắp tới'),
-                            const _HintRow(icon: '🟠', color: Colors.orange, text: 'Ô cam = bấm ngay bây giờ!'),
-                            const _HintRow(icon: '✅', color: Colors.greenAccent, text: 'PERFECT < 100ms · GOOD < 200ms'),
-                            const _HintRow(icon: '⚠', color: Colors.amber, text: 'LATE < 500ms · WRONG = sai nốt'),
+                            const _HintRow(
+                              icon: '━━',
+                              color: Color(0xFF00E5FF),
+                              text: 'Vạch xanh = vị trí cần bấm',
+                            ),
+                            const _HintRow(
+                              icon: '⬛',
+                              color: Color(0xFF2979FF),
+                              text: 'Ô màu xanh = nốt sắp tới',
+                            ),
+                            const _HintRow(
+                              icon: '🟠',
+                              color: Colors.orange,
+                              text: 'Ô cam = bấm ngay bây giờ!',
+                            ),
+                            const _HintRow(
+                              icon: '✅',
+                              color: Colors.greenAccent,
+                              text: 'PERFECT < 100ms · GOOD < 200ms',
+                            ),
+                            const _HintRow(
+                              icon: '⚠',
+                              color: Colors.amber,
+                              text: 'LATE < 500ms · WRONG = sai nốt',
+                            ),
                           ],
                         ),
                       ),
@@ -634,21 +858,38 @@ class _PracticeScreenState extends State<PracticeScreen>
                       children: [
                         ElevatedButton.icon(
                           onPressed: l.notes.isEmpty ? null : startCountdown,
-                          icon: Icon(Icons.play_circle_fill, size: isSmallScreen ? 24 : 28),
-                          label: Text('BẮT ĐẦU LUYỆN TẬP',
-                              style: TextStyle(fontSize: isSmallScreen ? 15 : 17, fontWeight: FontWeight.bold)),
+                          icon: Icon(
+                            Icons.play_circle_fill,
+                            size: isSmallScreen ? 24 : 28,
+                          ),
+                          label: Text(
+                            'BẮT ĐẦU LUYỆN TẬP',
+                            style: TextStyle(
+                              fontSize: isSmallScreen ? 15 : 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF0288D1),
                             foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 24 : 40, vertical: isSmallScreen ? 12 : 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isSmallScreen ? 24 : 40,
+                              vertical: isSmallScreen ? 12 : 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
                           ),
                         ),
                         if (isSmallScreen) ...[
                           const SizedBox(width: 12),
                           IconButton(
                             onPressed: () => _showRulesDialog(context),
-                            icon: const Icon(Icons.help_outline, color: Colors.white70, size: 28),
+                            icon: const Icon(
+                              Icons.help_outline,
+                              color: Colors.white70,
+                              size: 28,
+                            ),
                             tooltip: 'Hướng dẫn cách chơi',
                             style: IconButton.styleFrom(
                               backgroundColor: const Color(0xFF161B22),
@@ -662,9 +903,10 @@ class _PracticeScreenState extends State<PracticeScreen>
                       const Padding(
                         padding: EdgeInsets.only(top: 12),
                         child: Text(
-                            '⚠ Chưa có nhạc nền, sẽ chạy theo timer tự động.',
-                            style: TextStyle(color: Colors.orange, fontSize: 13),
-                            textAlign: TextAlign.center),
+                          '⚠ Chưa có nhạc nền, sẽ chạy theo timer tự động.',
+                          style: TextStyle(color: Colors.orange, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                   ],
                 ),
@@ -683,17 +925,40 @@ class _PracticeScreenState extends State<PracticeScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
-            _HintRow(icon: '━━', color: Color(0xFF00E5FF), text: 'Vạch xanh = vị trí cần bấm'),
-            _HintRow(icon: '⬛', color: Color(0xFF2979FF), text: 'Ô màu xanh = nốt sắp tới'),
-            _HintRow(icon: '🟠', color: Colors.orange, text: 'Ô cam = bấm ngay bây giờ!'),
-            _HintRow(icon: '✅', color: Colors.greenAccent, text: 'PERFECT < 100ms · GOOD < 200ms'),
-            _HintRow(icon: '⚠', color: Colors.amber, text: 'LATE < 500ms · WRONG = sai nốt'),
+            _HintRow(
+              icon: '━━',
+              color: Color(0xFF00E5FF),
+              text: 'Vạch xanh = vị trí cần bấm',
+            ),
+            _HintRow(
+              icon: '⬛',
+              color: Color(0xFF2979FF),
+              text: 'Ô màu xanh = nốt sắp tới',
+            ),
+            _HintRow(
+              icon: '🟠',
+              color: Colors.orange,
+              text: 'Ô cam = bấm ngay bây giờ!',
+            ),
+            _HintRow(
+              icon: '✅',
+              color: Colors.greenAccent,
+              text: 'PERFECT < 100ms · GOOD < 200ms',
+            ),
+            _HintRow(
+              icon: '⚠',
+              color: Colors.amber,
+              text: 'LATE < 500ms · WRONG = sai nốt',
+            ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng', style: TextStyle(color: Color(0xFF00BCD4))),
+            child: const Text(
+              'Đóng',
+              style: TextStyle(color: Color(0xFF00BCD4)),
+            ),
           ),
         ],
       ),
@@ -724,9 +989,10 @@ class _HintRow extends StatelessWidget {
           Text(icon, style: TextStyle(color: color, fontSize: 14)),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(text,
-                style:
-                    const TextStyle(color: Colors.white54, fontSize: 13)),
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.white54, fontSize: 13),
+            ),
           ),
         ],
       ),

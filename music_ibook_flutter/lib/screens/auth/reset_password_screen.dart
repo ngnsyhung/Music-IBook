@@ -1,26 +1,34 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/api_client.dart';
+import '../../core/validators.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/brutalist_elements.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  final String token;
+  final String email;
 
-  const ResetPasswordScreen({super.key, required this.token});
+  const ResetPasswordScreen({super.key, required this.email});
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
-  late final tokenController = TextEditingController(text: widget.token);
+  late final emailController = TextEditingController(text: widget.email);
+  final otpController = TextEditingController();
   final passwordController = TextEditingController();
   bool _obscurePassword = true;
-
   bool loading = false;
-  bool hidePassword = true;
+  String? errorMessage;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    otpController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +40,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           SafeArea(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 40.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -83,19 +94,44 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     ),
                     const SizedBox(height: 48),
                     const Text(
-                      "01 / RESET TOKEN",
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54),
+                      "01 / EMAIL ADDRESS",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     BrutalistInput(
-                      controller: tokenController,
-                      hint: "Enter token",
-                      icon: Icons.confirmation_number,
+                      controller: emailController,
+                      hint: "Enter registered email",
+                      icon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      "02 / NEW SECURITY KEY",
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54),
+                      "02 / 6-DIGIT OTP",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    BrutalistInput(
+                      controller: otpController,
+                      hint: "Enter OTP from Gmail",
+                      icon: Icons.pin_outlined,
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      "03 / NEW SECURITY KEY",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     BrutalistInput(
@@ -110,26 +146,85 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         });
                       },
                     ),
+                    if (errorMessage != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        errorMessage!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 32),
                     BrutalistButton(
                       onTap: () async {
-                        await AuthService().resetPassword(tokenController.text, passwordController.text);
-                        if (context.mounted) context.go('/login');
+                        if (loading) return;
+                        final email = emailController.text.trim();
+                        final otp = otpController.text.trim();
+                        final password = passwordController.text;
+                        if (!Validators.isValidEmail(email)) {
+                          setState(() => errorMessage = 'Email không hợp lệ');
+                          return;
+                        }
+                        if (!RegExp(r'^\d{6}$').hasMatch(otp)) {
+                          setState(
+                            () => errorMessage = 'OTP phải gồm đúng 6 chữ số',
+                          );
+                          return;
+                        }
+                        if (password.length < 8) {
+                          setState(
+                            () => errorMessage =
+                                'Mật khẩu mới phải có ít nhất 8 ký tự',
+                          );
+                          return;
+                        }
+                        setState(() {
+                          loading = true;
+                          errorMessage = null;
+                        });
+                        try {
+                          await AuthService().resetPassword(
+                            email: email,
+                            otp: otp,
+                            newPassword: password,
+                          );
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Đổi mật khẩu thành công'),
+                            ),
+                          );
+                          context.go('/login');
+                        } catch (error) {
+                          if (!mounted) return;
+                          setState(
+                            () => errorMessage = ApiClient.errorMessage(error),
+                          );
+                        } finally {
+                          if (mounted) setState(() => loading = false);
+                        }
                       },
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "UPDATE PASSWORD",
-                            style: TextStyle(
+                            loading ? 'UPDATING...' : "UPDATE PASSWORD",
+                            style: const TextStyle(
                               color: Color(0xFF007BFF),
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               letterSpacing: 1.2,
                             ),
                           ),
-                          SizedBox(width: 8),
-                          Icon(Icons.check_circle, color: Color(0xFF007BFF), size: 20),
+                          const SizedBox(width: 8),
+                          if (!loading)
+                            const Icon(
+                              Icons.check_circle,
+                              color: Color(0xFF007BFF),
+                              size: 20,
+                            ),
                         ],
                       ),
                     ),
@@ -140,36 +235,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _textField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-  }) {
-    return TextField(
-      controller: controller,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white54),
-        prefixIcon: Icon(icon, color: Colors.white70),
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: .08),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
-  Widget _circle(double size, Color color) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

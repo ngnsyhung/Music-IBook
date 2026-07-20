@@ -45,29 +45,12 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> loginWithGoogle() async {
-    loading = true;
-    error = null;
-    notifyListeners();
-
-    try {
-      final res = await _service.loginWithGoogle();
-      token = res.accessToken;
-      role = res.role;
-      fullName = res.fullName;
-      await _storage.saveAuth(token: token!, role: role!, fullName: fullName!);
-      loading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      error = ApiClient.errorMessage(e);
-      loading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> register(String fullName, String email, String password, String role) async {
+  Future<bool> register(
+    String fullName,
+    String email,
+    String password,
+    String role,
+  ) async {
     loading = true;
     error = null;
     notifyListeners();
@@ -82,7 +65,11 @@ class AuthProvider extends ChangeNotifier {
       token = res.accessToken;
       this.role = res.role;
       this.fullName = res.fullName;
-      await _storage.saveAuth(token: token!, role: this.role!, fullName: this.fullName!);
+      await _storage.saveAuth(
+        token: token!,
+        role: this.role!,
+        fullName: this.fullName!,
+      );
       loading = false;
       notifyListeners();
       return true;
@@ -104,7 +91,11 @@ class AuthProvider extends ChangeNotifier {
       token = res.accessToken;
       role = res.role;
       this.fullName = res.fullName;
-      await _storage.saveAuth(token: token!, role: role!, fullName: this.fullName!);
+      await _storage.saveAuth(
+        token: token!,
+        role: role!,
+        fullName: this.fullName!,
+      );
       loading = false;
       notifyListeners();
       return true;

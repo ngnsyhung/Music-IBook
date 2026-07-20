@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Music_IBook_API.DTOs;
 using Music_IBook_API.Services;
 
@@ -49,32 +49,17 @@ public class AuthController : BaseController
         }
     }
 
-    // BỔ SUNG: Endpoint cho Google Login
-    [HttpPost("google-login")]
-    public async Task<IActionResult> GoogleLogin(GoogleLoginRequest request)
-    {
-        try
-        {
-            var result = await authService.GoogleLoginAsync(request);
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
-
+    [EnableRateLimiting("password-reset")]
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
     {
         try
         {
-            var token = await authService.ForgotPasswordAsync(request);
-            return Ok(new { resetToken = token });
+            await authService.ForgotPasswordAsync(request);
+            return Ok(new
+            {
+                message = "Nếu email đã đăng ký, mã OTP sẽ được gửi trong ít phút."
+            });
         }
         catch (Exception ex)
         {

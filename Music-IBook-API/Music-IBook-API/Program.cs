@@ -7,6 +7,7 @@ using Music_IBook_API.Models;
 using Music_IBook_API.Repositories;
 using Music_IBook_API.Services;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,6 +83,19 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("password-reset", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFlutter", policy =>
@@ -98,6 +112,9 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<JwtHelper>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.Configure<GmailOptions>(
+    builder.Configuration.GetSection(GmailOptions.SectionName));
+builder.Services.AddScoped<IEmailSender, GmailEmailSender>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ITeacherService, TeacherService>();
@@ -108,6 +125,11 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<MusicIBookDbContext>();
+    // Keep the local/runtime database in sync with the entity model before
+    // any query or seed operation. This prevents newly-added notation fields
+    // (for example TempoMap and MIDI track metadata) from breaking every
+    // lesson query until a migration is applied manually.
+    await db.Database.MigrateAsync();
     await DbSeeder.SeedAsync(db);
 }
 
@@ -120,6 +142,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFlutter");
+app.UseRateLimiter();
 
 var provider = new FileExtensionContentTypeProvider();
 provider.Mappings[".mp3"] = "audio/mpeg";

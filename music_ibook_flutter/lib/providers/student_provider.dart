@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/api_client.dart';
 import '../models/practice.dart';
 import '../models/progress.dart';
+import '../models/lesson_authoring.dart';
 import '../services/student_service.dart';
 
 class StudentProvider extends ChangeNotifier {
@@ -12,6 +13,23 @@ class StudentProvider extends ChangeNotifier {
   String? error;
   List<StudentProgress> progresses = [];
   List<PracticeSession> history = [];
+  List<StudentAssignmentItem> assignments = [];
+  bool assignmentsLoading = false;
+  String? assignmentsError;
+
+  Future<void> loadAssignments({int? lessonId}) async {
+    assignmentsLoading = true;
+    assignmentsError = null;
+    assignments = [];
+    notifyListeners();
+    try {
+      assignments = await _service.getAssignments(lessonId: lessonId);
+    } catch (e) {
+      assignmentsError = ApiClient.errorMessage(e);
+    }
+    assignmentsLoading = false;
+    notifyListeners();
+  }
 
   Future<void> loadProgress() async {
     loading = true;
@@ -42,6 +60,7 @@ class StudentProvider extends ChangeNotifier {
     List<NoteAttemptRequest> attempts, {
     required bool isExam,
     required int durationSeconds,
+    int? studentAssignmentId,
   }) async {
     try {
       final result = await _service.submitPractice(
@@ -49,7 +68,16 @@ class StudentProvider extends ChangeNotifier {
         attempts: attempts,
         isExam: isExam,
         durationSeconds: durationSeconds,
+        studentAssignmentId: studentAssignmentId,
       );
+      if (studentAssignmentId != null) {
+        for (final assignment in assignments) {
+          if (assignment.id == studentAssignmentId) {
+            assignment.isCompleted = true;
+            break;
+          }
+        }
+      }
       history.insert(0, result);
       notifyListeners();
       return result;

@@ -23,6 +23,14 @@ public class LessonsController : BaseController
         return Ok(lessons);
     }
 
+    [Authorize(Roles = "Teacher")]
+    [HttpGet("mine")]
+    public async Task<IActionResult> GetMine()
+    {
+        var lessons = await lessonService.GetForTeacherAsync(CurrentUserId);
+        return Ok(lessons);
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(long id)
     {

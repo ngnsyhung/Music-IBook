@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 
 import '../models/lesson.dart';
 import '../services/score_engraving_service.dart';
+import '../utils/music_xml_generator.dart';
 import 'engraved_score.dart';
+import 'osmd_viewer.dart';
 
 /// Read-only score used by lesson, exam and practice screens.
 ///
-/// The same engraving model is also used by the teacher editor, so an imported
-/// MIDI keeps identical measure breaks, spacing, staves and accidentals after it
-/// is saved and opened by a student.
+/// Read-only lesson pages use the exact same MusicXML + OSMD pipeline as the
+/// teacher editor. Interactive exam overlays keep the canvas renderer because
+/// they need per-note hit geometry and 60 fps feedback.
 class MusicStaff extends StatefulWidget {
   final MusicLesson lesson;
   final int? highlightIndex;
@@ -38,6 +40,14 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
   late final AnimationController _glowController;
   late final Animation<double> _glowAnimation;
   EngravedScoreLayout? _lastLayout;
+  String? _cachedMusicXml;
+  int? _cachedMusicXmlHash;
+
+  bool get _needsInteractiveOverlay =>
+      widget.highlightIndex != null ||
+      widget.countdownSeconds != null ||
+      widget.elapsedNotifier != null ||
+      widget.showTimeline;
 
   @override
   void initState() {
@@ -45,7 +55,10 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
     _glowController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
+    );
+    if (_needsInteractiveOverlay) {
+      _glowController.repeat(reverse: true);
+    }
     _glowAnimation = CurvedAnimation(
       parent: _glowController,
       curve: Curves.easeInOut,
@@ -55,6 +68,18 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
   @override
   void didUpdateWidget(covariant MusicStaff oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final oldNeedsInteractiveOverlay =
+        oldWidget.highlightIndex != null ||
+        oldWidget.countdownSeconds != null ||
+        oldWidget.elapsedNotifier != null ||
+        oldWidget.showTimeline;
+    if (_needsInteractiveOverlay != oldNeedsInteractiveOverlay) {
+      if (_needsInteractiveOverlay) {
+        _glowController.repeat(reverse: true);
+      } else {
+        _glowController.stop();
+      }
+    }
     if (widget.highlightIndex != oldWidget.highlightIndex &&
         widget.highlightIndex != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -95,6 +120,61 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    if (!_needsInteractiveOverlay) {
+      final lesson = widget.lesson;
+      final xmlHash = Object.hashAll([
+        lesson.title,
+        lesson.composer,
+        lesson.keySignature,
+        lesson.timeSignature,
+        lesson.timeSignatureMap,
+        lesson.tempo,
+        lesson.tempoMap,
+        ...lesson.notes.map(
+          (note) => Object.hash(
+            note.note,
+            note.startBeat,
+            note.durationBeat,
+            note.track,
+            note.trackName,
+            note.staff,
+            note.voice,
+            note.lyric,
+            note.chord,
+            note.fingering,
+          ),
+        ),
+        ...lesson.annotations.map(
+          (annotation) => Object.hash(
+            annotation.startBeat,
+            annotation.endBeat,
+            annotation.kind,
+            annotation.text,
+          ),
+        ),
+      ]);
+      if (_cachedMusicXmlHash != xmlHash) {
+        _cachedMusicXmlHash = xmlHash;
+        _cachedMusicXml = MusicXmlGenerator.generate(
+          lesson.notes,
+          title: lesson.title,
+          composer: lesson.composer,
+          timeSignature: lesson.timeSignature,
+          timeSignatureMap: lesson.timeSignatureMap,
+          keySignature: lesson.keySignature,
+          tempo: lesson.tempo,
+          tempoMap: lesson.tempoMap,
+          annotations: lesson.annotations,
+        );
+      }
+      final maxBeat = lesson.notes.isEmpty
+          ? 1.0
+          : lesson.notes
+                .map((note) => note.startBeat + note.durationBeat)
+                .reduce(max);
+      return OsmdViewer(musicXml: _cachedMusicXml!, maxBeat: maxBeat);
+    }
+
     return ColoredBox(
       color: const Color(0xFFFFF6E6),
       child: LayoutBuilder(
@@ -142,6 +222,7 @@ class _MusicStaffState extends State<MusicStaff> with TickerProviderStateMixin {
                         title: widget.lesson.title,
                         composer: widget.lesson.composer,
                         backgroundColor: const Color(0xFFFFF6E6),
+                        scrollController: _verticalController,
                       ),
                     ),
                   ),

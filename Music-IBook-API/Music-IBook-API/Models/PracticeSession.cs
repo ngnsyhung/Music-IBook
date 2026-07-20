@@ -21,7 +21,6 @@ namespace Music_IBook_API.Models
 
         public AppUser Student { get; set; } = null!;
         public MusicLesson Lesson { get; set; } = null!;
-        public ICollection<PracticeSessionDetail> Details { get; set; } = new List<PracticeSessionDetail>();
         public ICollection<StudentNoteAttempt> NoteAttempts { get; set; } = new List<StudentNoteAttempt>();
     }
 }

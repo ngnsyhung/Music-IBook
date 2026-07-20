@@ -2,7 +2,6 @@
 	
 	<ItemGroup>
 		<PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
-		<PackageReference Include="Google.Apis.Auth" Version="1.75.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.8">
@@ -23,6 +22,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Music_IBook_API</RootNamespace>
+    <UserSecretsId>MusicIBook-API-LocalSecrets</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

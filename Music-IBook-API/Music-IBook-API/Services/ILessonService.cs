@@ -6,6 +6,7 @@ namespace Music_IBook_API.Services;
 public interface ILessonService
 {
     Task<List<MusicLesson>> GetAllAsync();
+    Task<List<MusicLesson>> GetForTeacherAsync(long teacherId);
     Task<MusicLesson?> GetByIdAsync(long id);
     Task<MusicLesson> CreateAsync(long teacherId, CreateLessonRequest request);
     Task<MusicLesson> UpdateAsync(long id, CreateLessonRequest request);

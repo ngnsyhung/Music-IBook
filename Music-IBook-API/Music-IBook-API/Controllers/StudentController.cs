@@ -53,4 +53,11 @@ public class StudentController : BaseController
         var result = await studentService.GetPracticeHistoryAsync(CurrentUserId);
         return Ok(result);
     }
+
+    [HttpGet("assignments")]
+    public async Task<IActionResult> GetAssignments([FromQuery] long? lessonId)
+    {
+        var result = await studentService.GetAssignmentsAsync(CurrentUserId, lessonId);
+        return Ok(result);
+    }
 }

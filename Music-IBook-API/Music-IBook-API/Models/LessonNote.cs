@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Music_IBook_API.Models
 {
@@ -11,12 +11,15 @@ namespace Music_IBook_API.Models
         public double StartBeat { get; set; } = 1;
         public double DurationBeat { get; set; } = 1;
         public int Velocity { get; set; } = 90;
+        public int Track { get; set; }
+        public string TrackName { get; set; } = "";
         public int Staff { get; set; }
         public int Voice { get; set; }
         public string Note { get; set; } = "";       // C4, D4, F#4...
         public string Duration { get; set; } = "";   // eighth, quarter, half
         public string Lyric { get; set; } = "";
         public string Chord { get; set; } = "";
+        public string Fingering { get; set; } = "";
 
         [JsonIgnore]
         public MusicLesson Lesson { get; set; } = null!;

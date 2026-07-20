@@ -10,6 +10,7 @@ class LessonProvider extends ChangeNotifier {
   final _service = LessonService();
 
   bool loading = false;
+  bool teacherLessonsLoading = false;
   String? error;
   List<MusicLesson> lessons = [];
   MusicLesson? current;
@@ -25,6 +26,22 @@ class LessonProvider extends ChangeNotifier {
     }
     loading = false;
     notifyListeners();
+  }
+
+  Future<void> loadTeacherLessons() async {
+    if (teacherLessonsLoading) return;
+    teacherLessonsLoading = true;
+    error = null;
+    notifyListeners();
+    try {
+      final loadedLessons = await _service.getMine();
+      lessons = loadedLessons;
+    } catch (e) {
+      error = ApiClient.errorMessage(e);
+    } finally {
+      teacherLessonsLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<MusicLesson?> loadLesson(int id) async {
@@ -72,6 +89,17 @@ class LessonProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> saveContent(MusicLesson lesson) async {
+    try {
+      await _service.saveContent(lesson);
+      return true;
+    } catch (e) {
+      error = ApiClient.errorMessage(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> uploadAudio(int lessonId, PlatformFile file) async {
     try {
       await _service.uploadAudio(lessonId, file);
@@ -83,9 +111,16 @@ class LessonProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> publish(int lessonId) async {
-    await _service.publish(lessonId);
-    await loadLessons();
+  Future<bool> publish(int lessonId) async {
+    try {
+      await _service.publish(lessonId);
+      await loadTeacherLessons();
+      return true;
+    } catch (e) {
+      error = ApiClient.errorMessage(e);
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<bool> deleteNote(int noteId) async {

@@ -6,13 +6,13 @@
         public string FullName { get; set; } = "";
         public string Email { get; set; } = "";
         
-        // Cập nhật: Cho phép null để hỗ trợ tài khoản đăng nhập từ Google
+        // Nullable để các tài khoản Google cũ có thể chuyển sang mật khẩu bằng OTP.
         public string? PasswordHash { get; set; } 
 
-        // Cập nhật: Lưu nguồn đăng nhập ("Local" hoặc "Google")
+        // Giữ lại để tương thích dữ liệu cũ; đăng nhập mới chỉ dùng Local.
         public string AuthProvider { get; set; } = "Local"; 
 
-        // Cập nhật: Lưu ID định danh do Google trả về
+        // Dữ liệu legacy, được xóa khi người dùng đặt mật khẩu bằng OTP.
         public string? ProviderKey { get; set; } 
 
         public string Role { get; set; } = "Student"; // Teacher, Student

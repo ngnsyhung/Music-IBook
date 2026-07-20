@@ -1,7 +1,6 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/api_client.dart';
 import '../../core/validators.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/brutalist_elements.dart';
@@ -15,8 +14,17 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final emailController = TextEditingController();
-  String result = '';
+  String message = '';
+  String submittedEmail = '';
   String? _emailError;
+  String? _requestError;
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +36,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           SafeArea(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 40.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -80,7 +91,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     const SizedBox(height: 48),
                     const Text(
                       "01 / EMAIL ADDRESS",
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     BrutalistInput(
@@ -94,15 +109,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         padding: const EdgeInsets.only(top: 8, bottom: 16),
                         child: Text(
                           _emailError!,
-                          style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     const SizedBox(height: 32),
                     BrutalistButton(
                       onTap: () async {
+                        if (_loading) return;
                         setState(() {
                           _emailError = null;
-                          result = '';
+                          _requestError = null;
+                          message = '';
                         });
                         final email = emailController.text.trim();
                         if (!Validators.isValidEmail(email)) {
@@ -111,27 +132,58 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           });
                           return;
                         }
-                        final token = await AuthService().forgotPassword(email);
-                        setState(() => result = token);
+                        setState(() => _loading = true);
+                        try {
+                          final response = await AuthService().forgotPassword(
+                            email,
+                          );
+                          if (!mounted) return;
+                          setState(() {
+                            submittedEmail = email;
+                            message = response;
+                          });
+                        } catch (error) {
+                          if (!mounted) return;
+                          setState(
+                            () => _requestError = ApiClient.errorMessage(error),
+                          );
+                        } finally {
+                          if (mounted) setState(() => _loading = false);
+                        }
                       },
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "SEND RESET LINK",
-                            style: TextStyle(
+                            _loading ? 'SENDING OTP...' : 'SEND OTP TO GMAIL',
+                            style: const TextStyle(
                               color: Color(0xFF007BFF),
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               letterSpacing: 1.2,
                             ),
                           ),
-                          SizedBox(width: 8),
-                          Icon(Icons.send, color: Color(0xFF007BFF), size: 20),
+                          const SizedBox(width: 8),
+                          if (!_loading)
+                            const Icon(
+                              Icons.send,
+                              color: Color(0xFF007BFF),
+                              size: 20,
+                            ),
                         ],
                       ),
                     ),
-                    if (result.isNotEmpty) ...[
+                    if (_requestError != null) ...[
+                      const SizedBox(height: 20),
+                      Text(
+                        _requestError!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    if (message.isNotEmpty) ...[
                       const SizedBox(height: 32),
                       Container(
                         width: double.infinity,
@@ -142,14 +194,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                         child: Column(
                           children: [
-                            const Text(
-                              "DEBUG TOKEN RECEIVED:",
-                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            const Icon(
+                              Icons.mark_email_read_outlined,
+                              color: Color(0xFF007BFF),
                             ),
                             const SizedBox(height: 8),
-                            SelectableText(
-                              result,
-                              style: const TextStyle(color: Color(0xFF007BFF), fontWeight: FontWeight.bold),
+                            Text(
+                              message,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -157,9 +212,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       const SizedBox(height: 16),
                       BrutalistButton(
-                        onTap: () => context.go('/reset-password?token=$result'),
+                        onTap: () => context.go(
+                          Uri(
+                            path: '/reset-password',
+                            queryParameters: {'email': submittedEmail},
+                          ).toString(),
+                        ),
                         child: const Text(
-                          "PROCEED TO RESET",
+                          "ENTER OTP",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.black,
@@ -168,7 +228,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             letterSpacing: 1.2,
                           ),
                         ),
-                      )
+                      ),
                     ],
                     const SizedBox(height: 24),
                     Center(
@@ -192,14 +252,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _circle(double size, Color color) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

@@ -9,4 +9,5 @@ public interface IStudentService
     Task<List<StudentLessonProgress>> GetProgressAsync(long studentId);
     Task<PracticeSession> SubmitPracticeAsync(long studentId, SubmitPracticeRequest request);
     Task<List<PracticeSession>> GetPracticeHistoryAsync(long studentId);
+    Task<List<AssignmentDto>> GetAssignmentsAsync(long studentId, long? lessonId);
 }

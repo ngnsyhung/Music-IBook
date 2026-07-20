@@ -37,3 +37,56 @@ public class LessonProgressDetailDto
     public double AverageScore { get; set; }
     public double Accuracy { get; set; }
 }
+
+public class PracticeSessionTrendDto
+{
+    public long SessionId { get; set; }
+    public bool IsExam { get; set; }
+    public int Score { get; set; }
+    public double Accuracy { get; set; }
+    public int CorrectCount { get; set; }
+    public int WrongCount { get; set; }
+    public DateTime StartedAtUtc { get; set; }
+}
+
+public class NoteErrorDto
+{
+    public string Note { get; set; } = "";
+    public int ErrorCount { get; set; }
+    public int WrongPitchCount { get; set; }
+    public int TimingErrorCount { get; set; }
+}
+
+public class AssignmentDto
+{
+    public long Id { get; set; }
+    public long StudentId { get; set; }
+    public long LessonId { get; set; }
+    public long? LessonSectionId { get; set; }
+    public long? LessonExerciseId { get; set; }
+    public string? SectionTitle { get; set; }
+    public string? ExerciseTitle { get; set; }
+    public string Message { get; set; } = "";
+    public DateTime? DueAtUtc { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public bool IsCompleted { get; set; }
+}
+
+public class LessonAnalyticsDto
+{
+    public long StudentId { get; set; }
+    public long LessonId { get; set; }
+    public List<PracticeSessionTrendDto> Sessions { get; set; } = [];
+    public List<NoteErrorDto> ErrorNotes { get; set; } = [];
+    public List<AssignmentDto> Assignments { get; set; } = [];
+}
+
+public class CreateStudentAssignmentRequest
+{
+    public long StudentId { get; set; }
+    public long LessonId { get; set; }
+    public long? LessonSectionId { get; set; }
+    public long? LessonExerciseId { get; set; }
+    public string Message { get; set; } = "";
+    public DateTime? DueAtUtc { get; set; }
+}

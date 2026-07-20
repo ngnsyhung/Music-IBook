@@ -1,4 +1,4 @@
-﻿namespace Music_IBook_API.Models
+namespace Music_IBook_API.Models
 {
     public class MusicLesson
     {
@@ -11,11 +11,8 @@
         public string KeySignature { get; set; } = "D Major";
         public string TimeSignature { get; set; } = "2/4";
         public string TimeSignatureMap { get; set; } = "";
+        public string TempoMap { get; set; } = "";
         public int Tempo { get; set; } = 80;
-
-        public string TheoryTitle { get; set; } = "";
-        public string TheoryContent { get; set; } = "";
-        public string PracticeGuide { get; set; } = "";
 
         public string? AudioUrl { get; set; }
         public string? AudioFileName { get; set; }
@@ -25,5 +22,8 @@
 
         public AppUser Teacher { get; set; } = null!;
         public ICollection<LessonNote> Notes { get; set; } = [];
+        public ICollection<LessonSection> Sections { get; set; } = [];
+        public ICollection<LessonAnnotation> Annotations { get; set; } = [];
+        public ICollection<LessonExercise> Exercises { get; set; } = [];
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Music_IBook_API.DTOs;
 using Music_IBook_API.Models;
 
@@ -18,15 +18,43 @@ public class LessonService : ILessonService
     public async Task<List<MusicLesson>> GetAllAsync()
     {
         return await db.Lessons
+            .AsNoTracking()
+            // Loading several child collections in one SQL query multiplies the
+            // result rows (notes x sections x annotations x exercises). MIDI
+            // lessons can contain thousands of notes, so use one query per
+            // collection while preserving the existing response contract.
+            .AsSplitQuery()
             .Include(x => x.Notes.OrderBy(n => n.StartBeat).ThenBy(n => n.Note))
+            .Include(x => x.Sections.OrderBy(s => s.SortOrder))
+            .Include(x => x.Annotations.OrderBy(a => a.StartBeat))
+            .Include(x => x.Exercises.OrderBy(e => e.SortOrder))
             .Where(x => x.IsPublished)
+            .ToListAsync();
+    }
+
+    public async Task<List<MusicLesson>> GetForTeacherAsync(long teacherId)
+    {
+        return await db.Lessons
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(x => x.Notes.OrderBy(n => n.StartBeat).ThenBy(n => n.Note))
+            .Include(x => x.Sections.OrderBy(s => s.SortOrder))
+            .Include(x => x.Annotations.OrderBy(a => a.StartBeat))
+            .Include(x => x.Exercises.OrderBy(e => e.SortOrder))
+            .Where(x => x.TeacherId == teacherId)
+            .OrderByDescending(x => x.CreatedAtUtc)
             .ToListAsync();
     }
 
     public async Task<MusicLesson?> GetByIdAsync(long id)
     {
         return await db.Lessons
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(x => x.Notes.OrderBy(n => n.StartBeat).ThenBy(n => n.Note))
+            .Include(x => x.Sections.OrderBy(s => s.SortOrder))
+            .Include(x => x.Annotations.OrderBy(a => a.StartBeat))
+            .Include(x => x.Exercises.OrderBy(e => e.SortOrder))
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
@@ -41,10 +69,8 @@ public class LessonService : ILessonService
             KeySignature = request.KeySignature,
             TimeSignature = request.TimeSignature,
             TimeSignatureMap = request.TimeSignatureMap,
+            TempoMap = request.TempoMap,
             Tempo = request.Tempo,
-            TheoryTitle = request.TheoryTitle,
-            TheoryContent = request.TheoryContent,
-            PracticeGuide = request.PracticeGuide,
             IsPublished = false
         };
 
@@ -66,10 +92,8 @@ public class LessonService : ILessonService
         lesson.KeySignature = request.KeySignature;
         lesson.TimeSignature = request.TimeSignature;
         lesson.TimeSignatureMap = request.TimeSignatureMap;
+        lesson.TempoMap = request.TempoMap;
         lesson.Tempo = request.Tempo;
-        lesson.TheoryTitle = request.TheoryTitle;
-        lesson.TheoryContent = request.TheoryContent;
-        lesson.PracticeGuide = request.PracticeGuide;
 
         await db.SaveChangesAsync();
         return lesson;
@@ -79,6 +103,9 @@ public class LessonService : ILessonService
     {
         var lesson = await db.Lessons
             .Include(x => x.Notes)
+            .Include(x => x.Sections)
+            .Include(x => x.Annotations)
+            .Include(x => x.Exercises)
             .FirstOrDefaultAsync(x => x.Id == lessonId);
 
         if (lesson == null)
@@ -100,6 +127,24 @@ public class LessonService : ILessonService
 
         db.StudentLessonProgresses.RemoveRange(progresses);
 
+        // StudentAssignments and LessonExercises both use restrictive lesson
+        // foreign keys. Mark every dependent explicitly so EF can order the
+        // DELETE statements without severing a required tracked relationship.
+        var assignments = await db.StudentAssignments
+            .Where(x => x.LessonId == lessonId)
+            .ToListAsync();
+        db.StudentAssignments.RemoveRange(assignments);
+
+        var practiceSessions = await db.PracticeSessions
+            .Where(x => x.LessonId == lessonId)
+            .ToListAsync();
+        db.PracticeSessions.RemoveRange(practiceSessions);
+
+        db.LessonExercises.RemoveRange(lesson.Exercises);
+        db.LessonAnnotations.RemoveRange(lesson.Annotations);
+        db.LessonSections.RemoveRange(lesson.Sections);
+        db.LessonNotes.RemoveRange(lesson.Notes);
+
         db.Lessons.Remove(lesson);
 
         await db.SaveChangesAsync();
@@ -118,12 +163,15 @@ public class LessonService : ILessonService
             StartBeat = request.StartBeat,
             DurationBeat = request.DurationBeat,
             Velocity = request.Velocity,
+            Track = request.Track,
+            TrackName = request.TrackName,
             Staff = request.Staff,
             Voice = request.Voice,
             Note = request.Note,
             Duration = request.Duration,
             Lyric = request.Lyric,
-            Chord = request.Chord
+            Chord = request.Chord,
+            Fingering = request.Fingering
         };
 
         db.LessonNotes.Add(note);
@@ -179,6 +227,9 @@ public class LessonService : ILessonService
     {
         var lesson = await db.Lessons
             .Include(x => x.Notes)
+            .Include(x => x.Sections)
+            .Include(x => x.Annotations)
+            .Include(x => x.Exercises)
             .FirstOrDefaultAsync(x => x.Id == lessonId);
 
         if (lesson == null)
@@ -188,19 +239,40 @@ public class LessonService : ILessonService
             .Select(x => x.Id)
             .ToList();
 
-        // Xóa kết quả luyện tập
+        if (request.Sections.Any(x =>
+                string.IsNullOrWhiteSpace(x.Title) ||
+                x.StartBeat < 1 ||
+                x.EndBeat < x.StartBeat ||
+                x.DefaultTempo is < 30 or > 300))
+        {
+            throw new ArgumentException("Dữ liệu đoạn luyện tập không hợp lệ.");
+        }
+
+        if (request.Sections.GroupBy(x => x.SortOrder).Any(x => x.Count() > 1))
+        {
+            throw new ArgumentException("Thứ tự các đoạn luyện tập phải là duy nhất.");
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync();
+
+        // Một thay đổi toàn bộ khuông nhạc tạo các ID nốt mới. Kết quả chấm
+        // theo nốt cũ không còn chính xác nên được dọn cùng lúc, thay vì để
+        // lại dữ liệu lỗi thời hoặc mồ côi.
         var attempts = await db.StudentNoteAttempts
             .Where(x => noteIds.Contains(x.LessonNoteId))
             .ToListAsync();
 
         db.StudentNoteAttempts.RemoveRange(attempts);
 
-        // Xóa toàn bộ note cũ
         db.LessonNotes.RemoveRange(lesson.Notes);
+        db.LessonExercises.RemoveRange(lesson.Exercises);
+        db.LessonAnnotations.RemoveRange(lesson.Annotations);
+        db.LessonSections.RemoveRange(lesson.Sections);
 
         await db.SaveChangesAsync();
 
-        // Thêm lại toàn bộ note mới
+        // Add the score and authoring metadata in one API request. Exercises
+        // use SortOrder while saving so they can refer to newly-created sections.
         var newNotes = request.Notes.Select(x => new LessonNote
         {
             LessonId = lessonId,
@@ -208,17 +280,66 @@ public class LessonService : ILessonService
             StartBeat = x.StartBeat,
             DurationBeat = x.DurationBeat,
             Velocity = x.Velocity,
+            Track = x.Track,
+            TrackName = x.TrackName,
             Staff = x.Staff,
             Voice = x.Voice,
             Note = x.Note,
             Duration = x.Duration,
             Lyric = x.Lyric,
-            Chord = x.Chord
+            Chord = x.Chord,
+            Fingering = x.Fingering
         });
 
         db.LessonNotes.AddRange(newNotes);
 
+        var newSections = request.Sections.Select(x => new LessonSection
+        {
+            LessonId = lessonId,
+            Title = x.Title.Trim(),
+            StartBeat = x.StartBeat,
+            EndBeat = x.EndBeat,
+            DefaultTempo = x.DefaultTempo,
+            Difficulty = x.Difficulty,
+            Hand = x.Hand,
+            SortOrder = x.SortOrder
+        }).ToList();
+        db.LessonSections.AddRange(newSections);
+
+        var newAnnotations = request.Annotations
+            .Where(x => !string.IsNullOrWhiteSpace(x.Text))
+            .Select(x => new LessonAnnotation
+            {
+                LessonId = lessonId,
+                StartBeat = Math.Max(1, x.StartBeat),
+                EndBeat = x.EndBeat,
+                Kind = x.Kind,
+                Text = x.Text.Trim()
+            });
+        db.LessonAnnotations.AddRange(newAnnotations);
+
         await db.SaveChangesAsync();
+
+        var sectionsByOrder = newSections.ToDictionary(x => x.SortOrder);
+        var newExercises = request.Exercises
+            .Where(x => !string.IsNullOrWhiteSpace(x.Title))
+            .Select(x => new LessonExercise
+            {
+                LessonId = lessonId,
+                LessonSectionId = x.SectionSortOrder.HasValue &&
+                                  sectionsByOrder.TryGetValue(x.SectionSortOrder.Value, out var section)
+                    ? section.Id
+                    : null,
+                Title = x.Title.Trim(),
+                Type = x.Type,
+                Instruction = x.Instruction.Trim(),
+                ConfigJson = string.IsNullOrWhiteSpace(x.ConfigJson) ? "{}" : x.ConfigJson,
+                SortOrder = x.SortOrder
+            });
+        db.LessonExercises.AddRange(newExercises);
+
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
     }
 
     public async Task PublishAsync(long lessonId)

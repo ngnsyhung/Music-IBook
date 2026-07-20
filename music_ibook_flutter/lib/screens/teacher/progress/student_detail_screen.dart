@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../providers/progress_provider.dart';
+import '../../../../utils/vietnam_time.dart';
 
 class StudentDetailScreen extends StatefulWidget {
   final int studentId;
@@ -15,10 +17,8 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () =>
-          context.read<ProgressProvider>().loadStudentDetail(widget.studentId),
-    );
+    final provider = context.read<ProgressProvider>();
+    Future.microtask(() => provider.loadStudentDetail(widget.studentId));
   }
 
   @override
@@ -187,14 +187,28 @@ class _StudentDetailScreenState extends State<StudentDetailScreen> {
                               ListTile(
                                 leading: const Icon(Icons.piano, size: 20),
                                 title: const Text('Luyện tập gần nhất'),
-                                subtitle: Text(l.lastPracticeAt!),
+                                subtitle: Text(
+                                  VietnamTime.format(l.lastPracticeAt!),
+                                ),
                               ),
                             if (l.lastExamAt != null)
                               ListTile(
                                 leading: const Icon(Icons.quiz, size: 20),
                                 title: const Text('Kiểm tra gần nhất'),
-                                subtitle: Text(l.lastExamAt!),
+                                subtitle: Text(
+                                  VietnamTime.format(l.lastExamAt!),
+                                ),
                               ),
+                            ListTile(
+                              leading: const Icon(Icons.insights_outlined),
+                              title: const Text('Xem lỗi nốt & tiến bộ'),
+                              subtitle: const Text(
+                                'So sánh các lần luyện và giao bài bổ sung',
+                              ),
+                              onTap: () => context.push(
+                                '/teacher/student/${widget.studentId}/lesson/${l.lessonId}/analytics',
+                              ),
+                            ),
                             const SizedBox(height: 8),
                           ],
                         ),

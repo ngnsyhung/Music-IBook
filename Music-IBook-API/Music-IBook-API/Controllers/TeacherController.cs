@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Music_IBook_API.DTOs;
 using Music_IBook_API.Services;
 
 namespace Music_IBook_API.Controllers;
@@ -19,7 +20,7 @@ public class TeacherController : BaseController
     [HttpGet("dashboard")]
     public async Task<IActionResult> GetDashboard()
     {
-        var result = await teacherService.GetDashboardAsync();
+        var result = await teacherService.GetDashboardAsync(CurrentUserId);
         return Ok(result);
     }
 
@@ -34,6 +35,20 @@ public class TeacherController : BaseController
     public async Task<IActionResult> GetStudentProgressDetail(long studentId)
     {
         var result = await teacherService.GetStudentProgressDetailAsync(studentId);
+        return Ok(result);
+    }
+
+    [HttpGet("students/{studentId}/lessons/{lessonId}/analytics")]
+    public async Task<IActionResult> GetLessonAnalytics(long studentId, long lessonId)
+    {
+        var result = await teacherService.GetLessonAnalyticsAsync(studentId, lessonId);
+        return Ok(result);
+    }
+
+    [HttpPost("assignments")]
+    public async Task<IActionResult> CreateAssignment(CreateStudentAssignmentRequest request)
+    {
+        var result = await teacherService.CreateStudentAssignmentAsync(request);
         return Ok(result);
     }
 }

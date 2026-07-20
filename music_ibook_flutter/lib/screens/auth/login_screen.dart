@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +19,13 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _emailError;
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
 
@@ -32,7 +37,10 @@ class _LoginScreenState extends State<LoginScreen> {
           SafeArea(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 40.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -96,7 +104,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     const Text(
                       "01 / USER IDENTIFICATION",
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     BrutalistInput(
@@ -110,13 +122,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.only(top: 8, bottom: 16),
                         child: Text(
                           _emailError!,
-                          style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     const SizedBox(height: 24),
                     const Text(
                       "02 / SECURITY KEY",
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     BrutalistInput(
@@ -131,7 +151,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 32),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: auth.loading
+                            ? null
+                            : () => context.go('/forgot-password'),
+                        child: const Text(
+                          'FORGOT PASSWORD?',
+                          style: TextStyle(
+                            color: Color(0xFF007BFF),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     BrutalistButton(
                       onTap: auth.loading
                           ? () {}
@@ -162,14 +199,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(width: 8),
                           if (!auth.loading)
-                            const Icon(Icons.arrow_forward, color: Color(0xFF007BFF), size: 20),
+                            const Icon(
+                              Icons.arrow_forward,
+                              color: Color(0xFF007BFF),
+                              size: 20,
+                            ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
                     Center(
                       child: TextButton(
-                        onPressed: auth.loading ? null : () => context.go('/register'),
+                        onPressed: auth.loading
+                            ? null
+                            : () => context.go('/register'),
                         child: const Text(
                           "CREATE NEW ACCOUNT",
                           style: TextStyle(
@@ -181,51 +224,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
-                    const Row(
-                      children: [
-                        Expanded(child: Divider(color: Colors.black, thickness: 1.5)),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            "OR CONNECT VIA",
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54),
-                          ),
-                        ),
-                        Expanded(child: Divider(color: Colors.black, thickness: 1.5)),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    BrutalistButton(
-                      onTap: auth.loading
-                          ? () {}
-                          : () {
-                              auth.loginWithGoogle();
-                            },
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "G",
-                            style: TextStyle(
-                              color: Color(0xFF007BFF),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            "GOOGLE ACCOUNT",
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -233,38 +231,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _textField({
-    required TextEditingController controller,
-    required IconData icon,
-    required String hint,
-    bool obscure = false,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.white70),
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white54),
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: .08),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
-  Widget _circle(double size, Color color) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

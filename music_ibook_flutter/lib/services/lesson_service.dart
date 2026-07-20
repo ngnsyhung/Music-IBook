@@ -14,6 +14,12 @@ class LessonService {
     return list.map((e) => MusicLesson.fromJson(e)).toList();
   }
 
+  Future<List<MusicLesson>> getMine() async {
+    final res = await _dio.get('/api/lessons/mine');
+    final list = res.data as List;
+    return list.map((e) => MusicLesson.fromJson(e)).toList();
+  }
+
   Future<MusicLesson> getById(int id) async {
     final res = await _dio.get('/api/lessons/$id');
     return MusicLesson.fromJson(res.data);
@@ -37,6 +43,14 @@ class LessonService {
     for (final note in notes) {
       await addNote(lessonId, note);
     }
+  }
+
+  Future<void> saveContent(MusicLesson lesson) async {
+    if (lesson.id == null) throw Exception('Bài học chưa được lưu');
+    await _dio.post(
+      '/api/lessons/${lesson.id}/content',
+      data: lesson.toContentJson(),
+    );
   }
 
   Future<void> uploadAudio(int lessonId, PlatformFile file) async {

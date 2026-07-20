@@ -5,12 +5,15 @@ class LessonNote {
   double startBeat;
   double durationBeat;
   int velocity;
+  int track;
+  String trackName;
   int staff;
   int voice;
   String note;
   String duration;
   String lyric;
   String chord;
+  String fingering;
 
   LessonNote({
     this.id,
@@ -19,12 +22,15 @@ class LessonNote {
     double? startBeat,
     double? durationBeat,
     this.velocity = 90,
+    this.track = 0,
+    this.trackName = '',
     this.staff = 0,
     this.voice = 0,
     required this.note,
     required this.duration,
     required this.lyric,
     this.chord = '',
+    this.fingering = '',
   }) : startBeat = startBeat ?? second,
        durationBeat = durationBeat ?? _durationToBeat(duration);
 
@@ -39,12 +45,15 @@ class LessonNote {
       durationBeat: (json['durationBeat'] ?? _durationToBeat(duration))
           .toDouble(),
       velocity: json['velocity'] ?? 90,
+      track: json['track'] ?? 0,
+      trackName: json['trackName'] ?? '',
       staff: json['staff'] ?? 0,
       voice: json['voice'] ?? 0,
       note: json['note'] ?? '',
       duration: duration,
       lyric: json['lyric'] ?? '',
       chord: json['chord'] ?? '',
+      fingering: json['fingering'] ?? '',
     );
   }
 
@@ -54,12 +63,15 @@ class LessonNote {
       'startBeat': startBeat,
       'durationBeat': durationBeat,
       'velocity': velocity,
+      'track': track,
+      'trackName': trackName,
       'staff': staff,
       'voice': voice,
       'note': note,
       'duration': duration,
       'lyric': lyric,
       'chord': chord,
+      'fingering': fingering,
     };
   }
 
@@ -70,12 +82,15 @@ class LessonNote {
     double? startBeat,
     double? durationBeat,
     int? velocity,
+    int? track,
+    String? trackName,
     int? staff,
     int? voice,
     String? note,
     String? duration,
     String? lyric,
     String? chord,
+    String? fingering,
   }) {
     return LessonNote(
       id: id ?? this.id,
@@ -84,12 +99,15 @@ class LessonNote {
       startBeat: startBeat ?? this.startBeat,
       durationBeat: durationBeat ?? this.durationBeat,
       velocity: velocity ?? this.velocity,
+      track: track ?? this.track,
+      trackName: trackName ?? this.trackName,
       staff: staff ?? this.staff,
       voice: voice ?? this.voice,
       note: note ?? this.note,
       duration: duration ?? this.duration,
       lyric: lyric ?? this.lyric,
       chord: chord ?? this.chord,
+      fingering: fingering ?? this.fingering,
     );
   }
 

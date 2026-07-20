@@ -6,13 +6,15 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/lesson.dart';
+import '../../models/lesson_authoring.dart';
 import '../../models/lesson_note.dart';
 import '../../providers/lesson_provider.dart';
 import '../../services/midi_service.dart';
 import '../../services/note_audio_service.dart';
-import '../../services/score_engraving_service.dart';
-import '../../widgets/engraved_score.dart';
+import '../../utils/music_xml_generator.dart';
+import '../../widgets/osmd_viewer.dart';
 import '../../widgets/piano_keyboard.dart';
+import '../../widgets/teacher_authoring_tools.dart';
 
 class _DurationOption {
   final String name;
@@ -108,6 +110,18 @@ const _durationOptions = [
     beats: 0.0625,
   ),
 ];
+
+String _replaceInitialTempo(String tempoMap, int bpm) {
+  final laterChanges = tempoMap.split(';').map((value) => value.trim()).where((
+    value,
+  ) {
+    final parts = value.split(':');
+    if (parts.length != 2) return false;
+    final beat = double.tryParse(parts.first.trim());
+    return beat != null && (beat - 1).abs() > 0.000001;
+  });
+  return ['1:${max(1, bpm)}', ...laterChanges].join(';');
+}
 
 class LessonEditorScreen extends StatefulWidget {
   final int? lessonId;
@@ -253,17 +267,19 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       _lesson = lesson..notes = normalizedNotes;
       _title.text = lesson.title;
       _composer.text = lesson.composer;
-      _description.text = lesson.practiceGuide;
       _timeSignature = lesson.timeSignature.isEmpty
           ? '4/4'
           : lesson.timeSignature;
       if (lesson.timeSignatureMap.isEmpty) {
         lesson.timeSignatureMap = '1:$_timeSignature';
       }
+      if (lesson.tempoMap.isEmpty) {
+        lesson.tempoMap = '1:${max(1, lesson.tempo)}';
+      }
       _keySignature = lesson.keySignature.isEmpty
           ? 'C Major'
           : lesson.keySignature;
-      _tempo = lesson.tempo.clamp(40, 220);
+      _tempo = max(1, lesson.tempo);
       _playheadBeat = 1;
     });
   }
@@ -305,12 +321,18 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     double requestedBeat,
     double durationBeat, {
     int? ignoreIndex,
+    int? staff,
+    int? voice,
+    bool allowChordAtRequestedStart = false,
   }) {
     var startBeat = max(1.0, requestedBeat);
     const epsilon = 0.0001;
     final occupied = <LessonNote>[
       for (var i = 0; i < _lesson.notes.length; i++)
-        if (i != ignoreIndex) _lesson.notes[i],
+        if (i != ignoreIndex &&
+            (staff == null || _lesson.notes[i].staff == staff) &&
+            (voice == null || _lesson.notes[i].voice == voice))
+          _lesson.notes[i],
     ]..sort((a, b) => a.startBeat.compareTo(b.startBeat));
 
     for (final note in occupied) {
@@ -319,6 +341,10 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       final noteEnd = note.startBeat + note.durationBeat;
 
       if (endBeat <= noteStart + epsilon) break;
+      if (allowChordAtRequestedStart &&
+          (noteStart - requestedBeat).abs() <= epsilon) {
+        continue;
+      }
       if (startBeat < noteEnd - epsilon && endBeat > noteStart + epsilon) {
         startBeat = _quantizeForward(noteEnd);
       }
@@ -426,6 +452,20 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     });
   }
 
+  String? get _playbackTargetNote {
+    if (!_isPlaying) return null;
+    for (final note in _lesson.notes) {
+      final noteEnd = note.startBeat + note.durationBeat;
+      if (note.startBeat <= _playheadBeat && _playheadBeat < noteEnd) {
+        return note.note;
+      }
+    }
+    for (final note in _lesson.notes) {
+      if (note.startBeat >= _playheadBeat) return note.note;
+    }
+    return null;
+  }
+
   void _startTicker() {
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(milliseconds: 33), (_) {
@@ -470,6 +510,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
 
   void _handleKey(KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) return;
+    if (_isEditingText()) return;
 
     final note = _keyboardNotes[event.logicalKey];
     if (note != null) {
@@ -499,6 +540,13 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     }
   }
 
+  bool _isEditingText() {
+    final context = FocusManager.instance.primaryFocus?.context;
+    if (context == null) return false;
+    return context.widget is EditableText ||
+        context.findAncestorWidgetOfExactType<EditableText>() != null;
+  }
+
   void _selectDuration(double duration) {
     setState(() => _selectedDurationBeat = duration);
     _focusNode.requestFocus();
@@ -518,14 +566,20 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
         beat ??
         (_isRecording ? _elapsedToBeat(_recordClock.elapsed) : _playheadBeat);
     final quantizedBeat = max(1.0, _quantize(rawBeat));
-    final startBeat = _nextFreeBeat(quantizedBeat, _selectedDurationBeat);
+    final targetStaff = staff ?? (_noteMidiNumber(note) < 60 ? 1 : 0);
+    final startBeat = _nextFreeBeat(
+      quantizedBeat,
+      _selectedDurationBeat,
+      staff: targetStaff,
+      voice: 0,
+    );
     final endBeat = startBeat + _selectedDurationBeat;
     final newNote = LessonNote(
       second: _beatToSeconds(startBeat),
       startBeat: startBeat,
       durationBeat: _selectedDurationBeat,
       velocity: velocity,
-      staff: staff ?? (_noteMidiNumber(note) < 60 ? 1 : 0),
+      staff: targetStaff,
       note: note,
       duration: _beatToDurationName(_selectedDurationBeat),
       lyric: _lyric.text.trim(),
@@ -570,6 +624,9 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
         _quantize(updated.startBeat),
         updated.durationBeat,
         ignoreIndex: index,
+        staff: updated.staff,
+        voice: updated.voice,
+        allowChordAtRequestedStart: true,
       );
       final notes = [..._lesson.notes];
       final changed = _syncNoteTiming(
@@ -598,6 +655,179 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     _insertNote(note.note, beat: note.startBeat + note.durationBeat);
   }
 
+  Future<void> _editNote(int index) async {
+    if (index < 0 || index >= _lesson.notes.length) return;
+    final original = _lesson.notes[index];
+    final pitch = TextEditingController(text: original.note);
+    final startBeat = TextEditingController(
+      text: original.startBeat.toString(),
+    );
+    final durationBeat = TextEditingController(
+      text: original.durationBeat.toString(),
+    );
+    final lyric = TextEditingController(text: original.lyric);
+    final chord = TextEditingController(text: original.chord);
+    final fingering = TextEditingController(text: original.fingering);
+    var staff = original.staff;
+    var voice = original.voice;
+
+    final updated = await showDialog<LessonNote>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Chỉnh sửa nốt nhạc'),
+          content: SingleChildScrollView(
+            child: SizedBox(
+              width: 420,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: pitch,
+                    decoration: const InputDecoration(
+                      labelText: 'Cao độ (ví dụ C4, F#4, Bb3)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: startBeat,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Beat bắt đầu',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: durationBeat,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Trường độ (beat)',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          initialValue: staff,
+                          decoration: const InputDecoration(
+                            labelText: 'Tay / khuông',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 0,
+                              child: Text('Tay phải / Sol'),
+                            ),
+                            DropdownMenuItem(
+                              value: 1,
+                              child: Text('Tay trái / Fa'),
+                            ),
+                          ],
+                          onChanged: (value) =>
+                              setDialogState(() => staff = value ?? 0),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          initialValue: voice,
+                          decoration: const InputDecoration(labelText: 'Voice'),
+                          items: List.generate(
+                            4,
+                            (value) => DropdownMenuItem(
+                              value: value,
+                              child: Text('${value + 1}'),
+                            ),
+                          ),
+                          onChanged: (value) =>
+                              setDialogState(() => voice = value ?? 0),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: lyric,
+                    decoration: const InputDecoration(labelText: 'Lời bài hát'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: chord,
+                    decoration: const InputDecoration(
+                      labelText: 'Hợp âm / chú thích trên nốt',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: fingering,
+                    decoration: const InputDecoration(
+                      labelText: 'Ngón đàn (1–5)',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final match = RegExp(
+                  r'^([A-Ga-g])([#bB]?)(-?\d+)$',
+                ).firstMatch(pitch.text.trim());
+                if (match == null) return;
+                final nextPitch =
+                    '${match.group(1)!.toUpperCase()}${match.group(2) == 'B' ? 'b' : match.group(2)!}${match.group(3)!}';
+                final nextStart =
+                    double.tryParse(startBeat.text) ?? original.startBeat;
+                final nextDuration =
+                    double.tryParse(durationBeat.text) ?? original.durationBeat;
+                if (nextStart < 1 || nextDuration <= 0) return;
+                Navigator.of(context).pop(
+                  original.copyWith(
+                    note: nextPitch,
+                    startBeat: nextStart,
+                    durationBeat: nextDuration,
+                    staff: staff,
+                    voice: voice,
+                    lyric: lyric.text.trim(),
+                    chord: chord.text.trim(),
+                    fingering: fingering.text.trim(),
+                    duration: _beatToDurationName(nextDuration),
+                    second: _beatToSeconds(nextStart),
+                  ),
+                );
+              },
+              child: const Text('Áp dụng'),
+            ),
+          ],
+        ),
+      ),
+    );
+    pitch.dispose();
+    startBeat.dispose();
+    durationBeat.dispose();
+    lyric.dispose();
+    chord.dispose();
+    fingering.dispose();
+    if (updated != null) _updateNote(index, updated);
+  }
+
   Future<void> _importMidi() async {
     try {
       final result = await MidiService.importMidiFile();
@@ -608,16 +838,21 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
         if (result.notes.isNotEmpty) {
           _lesson.notes = result.notes;
         }
-        _tempo = result.tempo.clamp(40, 220).toInt();
+        _tempo = max(1, result.tempo);
         if (!_timeSignatures.contains(result.timeSignature)) {
           _timeSignatures.add(result.timeSignature);
         }
         _timeSignature = result.timeSignature;
         _lesson.timeSignatureMap = result.timeSignatureMap;
+        _lesson.tempoMap = result.tempoMap;
         if (!_keySignatures.contains(result.keySignature)) {
           _keySignatures.add(result.keySignature);
         }
         _keySignature = result.keySignature;
+        _lesson
+          ..sections = []
+          ..annotations = []
+          ..exercises = [];
         _selectedIndex = null;
         _playheadBeat = 1;
       });
@@ -648,7 +883,6 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
       ..keySignature = _keySignature
       ..timeSignature = _timeSignature
       ..tempo = _tempo
-      ..practiceGuide = _description.text.trim()
       ..notes = syncedNotes;
 
     final provider = context.read<LessonProvider>();
@@ -662,19 +896,23 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     }
 
     _lesson.id = saved.id;
-    final deleted = await provider.deleteAllNotes(saved.id!);
-    final inserted =
-        deleted && await provider.addNotesOneByOne(saved.id!, _lesson.notes);
-    if (publish && inserted) await provider.publish(saved.id!);
+    // Imported scores can contain hundreds of notes. Store the score and its
+    // authoring metadata atomically instead of issuing one request per note.
+    final contentSaved = await provider.saveContent(_lesson);
+    final published =
+        !publish || (contentSaved && await provider.publish(saved.id!));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          inserted
+          contentSaved && published
               ? (publish
                     ? 'Đã lưu và xuất bản bài học'
-                    : 'Đã lưu bản nhạc theo beat')
-              : provider.error ?? 'Không thể đồng bộ nốt nhạc',
+                    : 'Đã lưu bản nhạc, đoạn luyện tập và bài tập')
+              : provider.error ??
+                    (contentSaved
+                        ? 'Không thể xuất bản bài học'
+                        : 'Không thể đồng bộ nội dung bài học'),
         ),
       ),
     );
@@ -733,7 +971,9 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final size = MediaQuery.sizeOf(context);
     final isPhone = size.shortestSide < 600;
-    final staffHeight = isPhone ? 260.0 : 390.0;
+    // The score itself owns its vertical scroll area. Giving phones a useful
+    // viewport avoids trapping a multi-system score behind the bottom keyboard.
+    final staffHeight = isPhone ? max(360.0, size.height * 0.48) : 460.0;
     final timelineHeight = isPhone ? 72.0 : 92.0;
 
     return KeyboardListener(
@@ -794,7 +1034,13 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
                       timeSignatures: _timeSignatures,
                       keySignatures: _keySignatures,
                       onTempoChanged: (value) {
-                        setState(() => _tempo = value.clamp(40, 220).toInt());
+                        setState(() {
+                          _tempo = max(1, value);
+                          _lesson.tempoMap = _replaceInitialTempo(
+                            _lesson.tempoMap,
+                            _tempo,
+                          );
+                        });
                         if (_isRecording || _isPlaying) _startMetronome();
                       },
                       onTimeSignatureChanged: (value) => setState(() {
@@ -849,7 +1095,11 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
                         tempo: _tempo,
                         timeSignature: _timeSignature,
                         timeSignatureMap: _lesson.timeSignatureMap,
+                        tempoMap: _lesson.tempoMap,
                         keySignature: _keySignature,
+                        title: _title.text,
+                        composer: _composer.text,
+                        annotations: _lesson.annotations,
                         zoom: _zoom,
                         selectedIndex: _selectedIndex,
                         onSelect: (index) =>
@@ -881,6 +1131,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
                       selectedIndex: _selectedIndex,
                       onSelect: (index) =>
                           setState(() => _selectedIndex = index),
+                      onEdit: _editNote,
                       onDelete: (index) {
                         _pushUndo();
                         setState(() {
@@ -888,6 +1139,28 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
                           _selectedIndex = null;
                         });
                       },
+                    ),
+                    const SizedBox(height: 12),
+                    TeacherAuthoringTools(
+                      sections: _lesson.sections,
+                      annotations: _lesson.annotations,
+                      exercises: _lesson.exercises,
+                      defaultTempo: _tempo,
+                      defaultDifficulty: 'Beginner',
+                      defaultHand: 'Both',
+                      maxBeat: _lesson.notes.isEmpty
+                          ? _beatsPerMeasure
+                          : _lesson.notes
+                                .map(
+                                  (note) => note.startBeat + note.durationBeat,
+                                )
+                                .reduce(max),
+                      onSectionsChanged: (sections) =>
+                          setState(() => _lesson.sections = sections),
+                      onAnnotationsChanged: (annotations) =>
+                          setState(() => _lesson.annotations = annotations),
+                      onExercisesChanged: (exercises) =>
+                          setState(() => _lesson.exercises = exercises),
                     ),
                   ],
                 ),
@@ -907,6 +1180,7 @@ class _LessonEditorScreenState extends State<LessonEditorScreen> {
                   top: false,
                   child: PianoKeyboard(
                     compact: true,
+                    targetNote: _playbackTargetNote,
                     onPressed: (note) => _insertNote(note),
                   ),
                 ),
@@ -1081,67 +1355,84 @@ class _LessonSetupPanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    initialValue: tempo.toString(),
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'BPM',
-                      prefixIcon: Icon(Icons.speed),
-                    ),
-                    onChanged: (value) =>
-                        onTempoChanged(int.tryParse(value) ?? tempo),
-                  ),
+            _ResponsiveFieldPair(
+              first: TextFormField(
+                initialValue: tempo.toString(),
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'BPM',
+                  prefixIcon: Icon(Icons.speed),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: timeSignature,
-                    decoration: const InputDecoration(labelText: 'Nhịp'),
-                    items: timeSignatures
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) onTimeSignatureChanged(value);
-                    },
-                  ),
-                ),
-              ],
+                onChanged: (value) =>
+                    onTempoChanged(int.tryParse(value) ?? tempo),
+              ),
+              second: DropdownButtonFormField<String>(
+                initialValue: timeSignature,
+                decoration: const InputDecoration(labelText: 'Nhịp'),
+                items: timeSignatures
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) onTimeSignatureChanged(value);
+                },
+              ),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: keySignature,
-                    decoration: const InputDecoration(labelText: 'Tông nhạc'),
-                    items: keySignatures
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) onKeySignatureChanged(value);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SwitchListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Metronome'),
-                    value: metronomeEnabled,
-                    onChanged: onMetronomeChanged,
-                  ),
-                ),
-              ],
+            _ResponsiveFieldPair(
+              first: DropdownButtonFormField<String>(
+                initialValue: keySignature,
+                decoration: const InputDecoration(labelText: 'Tông nhạc'),
+                items: keySignatures
+                    .map(
+                      (e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(
+                          e.isEmpty ? 'Không khai báo trong MIDI' : e,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) onKeySignatureChanged(value);
+                },
+              ),
+              second: SwitchListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Metronome'),
+                value: metronomeEnabled,
+                onChanged: onMetronomeChanged,
+              ),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+class _ResponsiveFieldPair extends StatelessWidget {
+  final Widget first;
+  final Widget second;
+
+  const _ResponsiveFieldPair({required this.first, required this.second});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      if (constraints.maxWidth < 520) {
+        return Column(children: [first, const SizedBox(height: 8), second]);
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: first),
+          const SizedBox(width: 8),
+          Expanded(child: second),
+        ],
+      );
+    },
+  );
 }
 
 class _EditorSettings extends StatelessWidget {
@@ -1191,40 +1482,64 @@ class _EditorSettings extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.grid_on, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<double>(
-                    initialValue: quantizeStep,
-                    decoration: const InputDecoration(labelText: 'Quantize'),
-                    items: const [
-                      DropdownMenuItem(value: 1, child: Text('1 phách')),
-                      DropdownMenuItem(value: 0.5, child: Text('1/2 phách')),
-                      DropdownMenuItem(value: 0.25, child: Text('1/4 phách')),
-                      DropdownMenuItem(value: 0.125, child: Text('1/8 phách')),
-                      DropdownMenuItem(
-                        value: 0.0625,
-                        child: Text('1/16 phách'),
+            LayoutBuilder(
+              builder: (context, constraints) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.grid_on, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButtonFormField<double>(
+                          initialValue: quantizeStep,
+                          decoration: const InputDecoration(
+                            labelText: 'Quantize',
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 1, child: Text('1 phách')),
+                            DropdownMenuItem(
+                              value: 0.5,
+                              child: Text('1/2 phách'),
+                            ),
+                            DropdownMenuItem(
+                              value: 0.25,
+                              child: Text('1/4 phách'),
+                            ),
+                            DropdownMenuItem(
+                              value: 0.125,
+                              child: Text('1/8 phách'),
+                            ),
+                            DropdownMenuItem(
+                              value: 0.0625,
+                              child: Text('1/16 phách'),
+                            ),
+                            DropdownMenuItem(
+                              value: 0.03125,
+                              child: Text('1/32 phách'),
+                            ),
+                            DropdownMenuItem(
+                              value: 0.015625,
+                              child: Text('1/64 phách'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) onQuantizeChanged(value);
+                          },
+                        ),
                       ),
-                      DropdownMenuItem(
-                        value: 0.03125,
-                        child: Text('1/32 phách'),
-                      ),
-                      DropdownMenuItem(
-                        value: 0.015625,
-                        child: Text('1/64 phách'),
-                      ),
+                      if (constraints.maxWidth >= 520) ...[
+                        const SizedBox(width: 12),
+                        Text('Q/W/E/R: octave $octaveShift'),
+                      ],
                     ],
-                    onChanged: (value) {
-                      if (value != null) onQuantizeChanged(value);
-                    },
                   ),
-                ),
-                const SizedBox(width: 12),
-                Text('Q/W/E/R: octave $octaveShift'),
-              ],
+                  if (constraints.maxWidth < 520) ...[
+                    const SizedBox(height: 6),
+                    Text('Q/W/E/R: octave $octaveShift'),
+                  ],
+                ],
+              ),
             ),
             Row(
               children: [
@@ -1299,13 +1614,17 @@ class _DurationButton extends StatelessWidget {
   }
 }
 
-class _CompositionStaff extends StatelessWidget {
+class _CompositionStaff extends StatefulWidget {
   final List<LessonNote> notes;
   final double playheadBeat;
   final int tempo;
   final String timeSignature;
   final String timeSignatureMap;
+  final String tempoMap;
   final String keySignature;
+  final String title;
+  final String composer;
+  final List<LessonAnnotation> annotations;
   final double zoom;
   final int? selectedIndex;
   final ValueChanged<int> onSelect;
@@ -1318,7 +1637,11 @@ class _CompositionStaff extends StatelessWidget {
     required this.tempo,
     required this.timeSignature,
     required this.timeSignatureMap,
+    required this.tempoMap,
     required this.keySignature,
+    required this.title,
+    required this.composer,
+    required this.annotations,
     required this.zoom,
     required this.selectedIndex,
     required this.onSelect,
@@ -1327,113 +1650,82 @@ class _CompositionStaff extends StatelessWidget {
   });
 
   @override
+  State<_CompositionStaff> createState() => _CompositionStaffState();
+}
+
+class _CompositionStaffState extends State<_CompositionStaff> {
+  final ScrollController _scrollController = ScrollController();
+  String? _cachedXml;
+  int? _cachedRenderHash;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final contentWidth = constraints.maxWidth;
-        final scoreLayout = ScoreEngravingService.layout(
-          notes: notes,
-          minimumEndBeat: playheadBeat,
-          timeSignature: timeSignature,
-          timeSignatureMap: timeSignatureMap,
-          keySignature: keySignature,
-          width: contentWidth,
-          style: EngravingStyle(
-            systemHeight: 270 * max(0.85, zoom),
-            staffSpace: 10 * max(0.85, zoom),
-            grandStaffDistance: 100 * max(0.85, zoom),
-            minimumSliceWidth: 20 * max(0.75, zoom),
-          ),
-        );
-        final contentHeight = scoreLayout.height;
-        return SingleChildScrollView(
-          child: SizedBox(
-            width: contentWidth,
-            height: contentHeight,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapUp: (details) {
-                final hit = EngravedScoreGeometry.hitTest(
-                  scoreLayout,
-                  details.localPosition,
-                );
-                if (hit != null) {
-                  onSelect(hit);
-                  return;
-                }
-                final beat = scoreLayout.beatAt(
-                  details.localPosition.dx,
-                  details.localPosition.dy,
-                );
-                final staff = EngravedScoreGeometry.staffAt(
-                  scoreLayout,
-                  details.localPosition,
-                );
-                final note = EngravedScoreGeometry.noteAt(
-                  scoreLayout,
-                  details.localPosition,
-                  staff,
-                );
-                onCreate(note, beat, staff);
-              },
-              onPanUpdate: (details) {
-                if (selectedIndex == null) return;
-                final selected = notes[selectedIndex!];
-                final beat = scoreLayout.beatAt(
-                  details.localPosition.dx,
-                  details.localPosition.dy,
-                );
-                final staff = EngravedScoreGeometry.staffAt(
-                  scoreLayout,
-                  details.localPosition,
-                );
-                final note = EngravedScoreGeometry.noteAt(
-                  scoreLayout,
-                  details.localPosition,
-                  staff,
-                );
-                onChange(
-                  selectedIndex!,
-                  selected.copyWith(
-                    startBeat: beat.clamp(1, 256).toDouble(),
-                    second: -1,
-                    note: note,
-                    staff: staff,
-                  ),
-                );
-              },
-              onLongPressMoveUpdate: (details) {
-                if (selectedIndex == null) return;
-                final selected = notes[selectedIndex!];
-                final beat = scoreLayout.beatAt(
-                  details.localPosition.dx,
-                  details.localPosition.dy,
-                );
-                onChange(
-                  selectedIndex!,
-                  selected.copyWith(
-                    durationBeat: max(0.125, beat - selected.startBeat),
-                  ),
-                );
-              },
-              child: CustomPaint(
-                size: Size(contentWidth, contentHeight),
-                painter: EngravedScorePainter(
-                  layout: scoreLayout,
-                  tempo: tempo,
-                  playheadBeat: playheadBeat,
-                  selectedSourceIndex: selectedIndex,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+    final renderHash = Object.hashAll([
+      widget.notes.length,
+      ...widget.notes.map(
+        (note) => Object.hash(
+          note.note,
+          note.startBeat,
+          note.durationBeat,
+          note.track,
+          note.trackName,
+          note.staff,
+          note.voice,
+          note.lyric,
+          note.chord,
+          note.fingering,
+        ),
+      ),
+      widget.timeSignature,
+      widget.timeSignatureMap,
+      widget.keySignature,
+      widget.tempo,
+      widget.tempoMap,
+      widget.title,
+      widget.composer,
+      ...widget.annotations.map(
+        (annotation) => Object.hash(
+          annotation.startBeat,
+          annotation.endBeat,
+          annotation.kind,
+          annotation.text,
+        ),
+      ),
+    ]);
+    if (_cachedRenderHash != renderHash) {
+      _cachedRenderHash = renderHash;
+      _cachedXml = MusicXmlGenerator.generate(
+        widget.notes,
+        title: widget.title,
+        composer: widget.composer,
+        timeSignature: widget.timeSignature,
+        timeSignatureMap: widget.timeSignatureMap,
+        keySignature: widget.keySignature,
+        tempo: widget.tempo,
+        tempoMap: widget.tempoMap,
+        annotations: widget.annotations,
+      );
+    }
+    final maxBeat = widget.notes.isEmpty
+        ? 1.0
+        : widget.notes
+              .map((note) => note.startBeat + note.durationBeat)
+              .reduce(max);
+    return OsmdViewer(
+      musicXml: _cachedXml!,
+      playheadBeat: widget.playheadBeat,
+      maxBeat: maxBeat,
     );
   }
 }
 
-class _BeatTimeline extends StatelessWidget {
+class _BeatTimeline extends StatefulWidget {
   final List<LessonNote> notes;
   final double playheadBeat;
   final double beatsPerMeasure;
@@ -1447,20 +1739,84 @@ class _BeatTimeline extends StatelessWidget {
   });
 
   @override
+  State<_BeatTimeline> createState() => _BeatTimelineState();
+}
+
+class _BeatTimelineState extends State<_BeatTimeline> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void didUpdateWidget(covariant _BeatTimeline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.playheadBeat != widget.playheadBeat) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _followPlayhead());
+    }
+  }
+
+  void _followPlayhead() {
+    if (!_scrollController.hasClients) return;
+    final beatWidth = 72 * widget.zoom;
+    final target =
+        (18 +
+                (widget.playheadBeat - 1) * beatWidth -
+                _scrollController.position.viewportDimension * 0.35)
+            .clamp(0.0, _scrollController.position.maxScrollExtent);
+    if ((_scrollController.offset - target).abs() > 6) {
+      _scrollController.jumpTo(target);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      clipBehavior: Clip.antiAlias,
-      child: CustomPaint(
-        painter: _TimelinePainter(
-          notes: notes,
-          playheadBeat: playheadBeat,
-          beatsPerMeasure: beatsPerMeasure,
-          zoom: zoom,
-        ),
-        size: Size.infinite,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxNoteBeat = widget.notes.isEmpty
+            ? widget.beatsPerMeasure
+            : widget.notes
+                  .map((note) => note.startBeat + note.durationBeat)
+                  .reduce(max);
+        final totalBeats = max(
+          maxNoteBeat + widget.beatsPerMeasure,
+          widget.playheadBeat + 2,
+        );
+        final contentWidth = max(
+          constraints.maxWidth,
+          36 + totalBeats * 72 * widget.zoom,
+        );
+
+        return Card(
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          clipBehavior: Clip.antiAlias,
+          child: Scrollbar(
+            controller: _scrollController,
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: contentWidth,
+                height: constraints.maxHeight,
+                child: CustomPaint(
+                  painter: _TimelinePainter(
+                    notes: widget.notes,
+                    playheadBeat: widget.playheadBeat,
+                    beatsPerMeasure: widget.beatsPerMeasure,
+                    zoom: widget.zoom,
+                  ),
+                  size: Size.infinite,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1604,12 +1960,14 @@ class _NotesInspector extends StatelessWidget {
   final List<LessonNote> notes;
   final int? selectedIndex;
   final ValueChanged<int> onSelect;
+  final ValueChanged<int> onEdit;
   final ValueChanged<int> onDelete;
 
   const _NotesInspector({
     required this.notes,
     required this.selectedIndex,
     required this.onSelect,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -1621,7 +1979,7 @@ class _NotesInspector extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(16),
           child: Text(
-            'Chưa có nốt nào. Chạm lên khuông nhạc hoặc dùng piano ảo để nhập nốt.',
+            'Chưa có nốt nào. Dùng piano ảo hoặc bàn phím máy tính để nhập nốt; sau đó chọn biểu tượng bút để chỉnh chi tiết.',
           ),
         ),
       );
@@ -1630,27 +1988,38 @@ class _NotesInspector extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Column(
-        children: [
-          for (var i = 0; i < notes.length; i++)
-            ListTile(
-              selected: selectedIndex == i,
-              leading: CircleAvatar(child: Text('${i + 1}')),
-              title: Text(
-                '${notes[i].note} · beat ${notes[i].startBeat.toStringAsFixed(2)}',
-              ),
-              subtitle: Text(
-                'duration ${notes[i].durationBeat.toStringAsFixed(2)} · velocity ${notes[i].velocity}'
-                '${notes[i].lyric.isEmpty ? '' : ' · ${notes[i].lyric}'}',
-              ),
-              onTap: () => onSelect(i),
-              trailing: IconButton(
-                tooltip: 'Xóa',
-                onPressed: () => onDelete(i),
-                icon: const Icon(Icons.delete_outline),
-              ),
+      child: SizedBox(
+        height: 300,
+        child: ListView.builder(
+          itemCount: notes.length,
+          itemBuilder: (context, i) => ListTile(
+            selected: selectedIndex == i,
+            leading: CircleAvatar(child: Text('${i + 1}')),
+            title: Text(
+              '${notes[i].note} · beat ${notes[i].startBeat.toStringAsFixed(2)}',
             ),
-        ],
+            subtitle: Text(
+              'duration ${notes[i].durationBeat.toStringAsFixed(2)} · velocity ${notes[i].velocity}'
+              '${notes[i].lyric.isEmpty ? '' : ' · ${notes[i].lyric}'}',
+            ),
+            onTap: () => onSelect(i),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Chỉnh sửa nốt',
+                  onPressed: () => onEdit(i),
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Xóa',
+                  onPressed: () => onDelete(i),
+                  icon: const Icon(Icons.delete_outline),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

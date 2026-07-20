@@ -92,7 +92,11 @@ class BrutalistInput extends StatelessWidget {
             : TextCapitalization.sentences,
         autocorrect: keyboardType != TextInputType.emailAddress,
         enableSuggestions: keyboardType != TextInputType.emailAddress,
-        style: const TextStyle(fontWeight: FontWeight.w500),
+        cursorColor: Colors.black,
+        style: const TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w500,
+        ),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.black38),
@@ -119,10 +123,12 @@ class AnimatedBrutalistBackground extends StatefulWidget {
   const AnimatedBrutalistBackground({super.key});
 
   @override
-  State<AnimatedBrutalistBackground> createState() => _AnimatedBrutalistBackgroundState();
+  State<AnimatedBrutalistBackground> createState() =>
+      _AnimatedBrutalistBackgroundState();
 }
 
-class _AnimatedBrutalistBackgroundState extends State<AnimatedBrutalistBackground>
+class _AnimatedBrutalistBackgroundState
+    extends State<AnimatedBrutalistBackground>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
@@ -184,10 +190,18 @@ class GridPainter extends CustomPainter {
     const double gridSize = 40.0;
     final double offset = progress * gridSize;
 
-    for (double i = -gridSize + (offset % gridSize); i < size.width; i += gridSize) {
+    for (
+      double i = -gridSize + (offset % gridSize);
+      i < size.width;
+      i += gridSize
+    ) {
       canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
     }
-    for (double i = -gridSize + (offset % gridSize); i < size.height; i += gridSize) {
+    for (
+      double i = -gridSize + (offset % gridSize);
+      i < size.height;
+      i += gridSize
+    ) {
       canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
     }
   }

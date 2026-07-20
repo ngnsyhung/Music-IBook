@@ -1,4 +1,5 @@
 import '../core/api_client.dart';
+import '../utils/vietnam_time.dart';
 
 class TeacherDashboardData {
   final int totalLessons;
@@ -33,7 +34,7 @@ class StudentProgressOverview {
   final int lessonCount;
   final int examCount;
   final double averageScore;
-  final String? lastActivityAt;
+  final DateTime? lastActivityAt;
 
   StudentProgressOverview({
     required this.studentId,
@@ -53,7 +54,7 @@ class StudentProgressOverview {
       lessonCount: json['lessonCount'] ?? 0,
       examCount: json['examCount'] ?? 0,
       averageScore: (json['averageScore'] ?? 0).toDouble(),
-      lastActivityAt: json['lastActivityAt'],
+      lastActivityAt: VietnamTime.parseUtc(json['lastActivityAt']),
     );
   }
 }
@@ -61,8 +62,8 @@ class StudentProgressOverview {
 class LessonProgressDetail {
   final int lessonId;
   final String lessonName;
-  final String? lastPracticeAt;
-  final String? lastExamAt;
+  final DateTime? lastPracticeAt;
+  final DateTime? lastExamAt;
   final int highestScore;
   final double averageScore;
   final double accuracy;
@@ -81,8 +82,8 @@ class LessonProgressDetail {
     return LessonProgressDetail(
       lessonId: json['lessonId'] ?? 0,
       lessonName: json['lessonName'] ?? '',
-      lastPracticeAt: json['lastPracticeAt'],
-      lastExamAt: json['lastExamAt'],
+      lastPracticeAt: VietnamTime.parseUtc(json['lastPracticeAt']),
+      lastExamAt: VietnamTime.parseUtc(json['lastExamAt']),
       highestScore: json['highestScore'] ?? 0,
       averageScore: (json['averageScore'] ?? 0).toDouble(),
       accuracy: (json['accuracy'] ?? 0).toDouble(),
@@ -111,6 +112,125 @@ class StudentDetailProgress {
   }
 }
 
+class PracticeSessionTrend {
+  final int sessionId;
+  final bool isExam;
+  final int score;
+  final double accuracy;
+  final int correctCount;
+  final int wrongCount;
+  final DateTime startedAt;
+
+  PracticeSessionTrend({
+    required this.sessionId,
+    required this.isExam,
+    required this.score,
+    required this.accuracy,
+    required this.correctCount,
+    required this.wrongCount,
+    required this.startedAt,
+  });
+
+  factory PracticeSessionTrend.fromJson(Map<String, dynamic> json) =>
+      PracticeSessionTrend(
+        sessionId: json['sessionId'] ?? 0,
+        isExam: json['isExam'] ?? false,
+        score: json['score'] ?? 0,
+        accuracy: (json['accuracy'] ?? 0).toDouble(),
+        correctCount: json['correctCount'] ?? 0,
+        wrongCount: json['wrongCount'] ?? 0,
+        startedAt:
+            VietnamTime.parseUtc(json['startedAtUtc']) ??
+            DateTime.fromMillisecondsSinceEpoch(0),
+      );
+}
+
+class NoteErrorSummary {
+  final String note;
+  final int errorCount;
+  final int wrongPitchCount;
+  final int timingErrorCount;
+
+  NoteErrorSummary({
+    required this.note,
+    required this.errorCount,
+    required this.wrongPitchCount,
+    required this.timingErrorCount,
+  });
+
+  factory NoteErrorSummary.fromJson(Map<String, dynamic> json) =>
+      NoteErrorSummary(
+        note: json['note'] ?? '',
+        errorCount: json['errorCount'] ?? 0,
+        wrongPitchCount: json['wrongPitchCount'] ?? 0,
+        timingErrorCount: json['timingErrorCount'] ?? 0,
+      );
+}
+
+class StudentAssignment {
+  final int id;
+  final int? lessonSectionId;
+  final int? lessonExerciseId;
+  final String? sectionTitle;
+  final String? exerciseTitle;
+  final String message;
+  final DateTime? dueAt;
+  final DateTime createdAt;
+  final bool isCompleted;
+
+  StudentAssignment({
+    required this.id,
+    this.lessonSectionId,
+    this.lessonExerciseId,
+    this.sectionTitle,
+    this.exerciseTitle,
+    required this.message,
+    this.dueAt,
+    required this.createdAt,
+    required this.isCompleted,
+  });
+
+  factory StudentAssignment.fromJson(Map<String, dynamic> json) =>
+      StudentAssignment(
+        id: json['id'] ?? 0,
+        lessonSectionId: json['lessonSectionId'],
+        lessonExerciseId: json['lessonExerciseId'],
+        sectionTitle: json['sectionTitle'],
+        exerciseTitle: json['exerciseTitle'],
+        message: json['message'] ?? '',
+        dueAt: VietnamTime.parseUtc(json['dueAtUtc']),
+        createdAt:
+            VietnamTime.parseUtc(json['createdAtUtc']) ??
+            DateTime.fromMillisecondsSinceEpoch(0),
+        isCompleted: json['isCompleted'] ?? false,
+      );
+}
+
+class LessonAnalytics {
+  final List<PracticeSessionTrend> sessions;
+  final List<NoteErrorSummary> errorNotes;
+  final List<StudentAssignment> assignments;
+
+  LessonAnalytics({
+    required this.sessions,
+    required this.errorNotes,
+    required this.assignments,
+  });
+
+  factory LessonAnalytics.fromJson(Map<String, dynamic> json) =>
+      LessonAnalytics(
+        sessions: (json['sessions'] as List? ?? [])
+            .map((item) => PracticeSessionTrend.fromJson(item))
+            .toList(),
+        errorNotes: (json['errorNotes'] as List? ?? [])
+            .map((item) => NoteErrorSummary.fromJson(item))
+            .toList(),
+        assignments: (json['assignments'] as List? ?? [])
+            .map((item) => StudentAssignment.fromJson(item))
+            .toList(),
+      );
+}
+
 class TeacherService {
   final _dio = ApiClient.instance.dio;
 
@@ -128,5 +248,36 @@ class TeacherService {
   Future<StudentDetailProgress> getStudentProgressDetail(int studentId) async {
     final res = await _dio.get('/api/teacher/students/$studentId/progress');
     return StudentDetailProgress.fromJson(res.data);
+  }
+
+  Future<LessonAnalytics> getLessonAnalytics(
+    int studentId,
+    int lessonId,
+  ) async {
+    final res = await _dio.get(
+      '/api/teacher/students/$studentId/lessons/$lessonId/analytics',
+    );
+    return LessonAnalytics.fromJson(res.data);
+  }
+
+  Future<void> createAssignment({
+    required int studentId,
+    required int lessonId,
+    int? lessonSectionId,
+    int? lessonExerciseId,
+    required String message,
+    DateTime? dueAt,
+  }) async {
+    await _dio.post(
+      '/api/teacher/assignments',
+      data: {
+        'studentId': studentId,
+        'lessonId': lessonId,
+        'lessonSectionId': lessonSectionId,
+        'lessonExerciseId': lessonExerciseId,
+        'message': message,
+        'dueAtUtc': dueAt?.toUtc().toIso8601String(),
+      },
+    );
   }
 }

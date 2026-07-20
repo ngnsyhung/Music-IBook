@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/auth_provider.dart';
 import '../../providers/lesson_provider.dart';
 import '../../widgets/lesson_card.dart';
 
@@ -22,15 +21,43 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<LessonProvider>().loadLessons());
+    final lessonProvider = context.read<LessonProvider>();
+    Future.microtask(lessonProvider.loadTeacherLessons);
   }
 
   Widget _buildLessonList() {
     final provider = context.watch<LessonProvider>();
-    if (provider.loading)
+    if (provider.teacherLessonsLoading && provider.lessons.isEmpty) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (provider.error != null && provider.lessons.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_rounded, size: 48),
+              const SizedBox(height: 12),
+              Text(provider.error!, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: () =>
+                    context.read<LessonProvider>().loadTeacherLessons(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (provider.lessons.isEmpty) {
+      return const Center(child: Text('Chưa có bài học nào.'));
+    }
 
     return ListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 96),
       itemCount: provider.lessons.length,
       itemBuilder: (_, i) {
         final l = provider.lessons[i];
@@ -49,6 +76,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red),
                 onPressed: () async {
+                  final lessonProvider = context.read<LessonProvider>();
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (_) => AlertDialog(
@@ -66,17 +94,16 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                       ],
                     ),
                   );
-                  if (confirm != true) return;
-                  final ok = await context.read<LessonProvider>().deleteLesson(
-                    l.id!,
-                  );
+                  if (!mounted || confirm != true) return;
+                  final ok = await lessonProvider.deleteLesson(l.id!);
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(ok ? 'Đã xóa bài học' : 'Xóa thất bại'),
                     ),
                   );
-                  if (ok) context.read<LessonProvider>().loadLessons();
+                  // deleteLesson already removes the item from the local list.
+                  // Avoid immediately downloading every score again.
                 },
               ),
             ],
@@ -135,7 +162,15 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               ).colorScheme.secondary.withValues(alpha: 0.05),
             ),
           ),
-          tabs[_currentIndex],
+          Column(
+            children: [
+              if (_currentIndex == 1 &&
+                  context.watch<LessonProvider>().teacherLessonsLoading &&
+                  context.watch<LessonProvider>().lessons.isNotEmpty)
+                const LinearProgressIndicator(minHeight: 2),
+              Expanded(child: tabs[_currentIndex]),
+            ],
+          ),
         ],
       ),
       floatingActionButton: _currentIndex == 1

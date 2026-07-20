@@ -11,6 +11,7 @@ public class SaveProgressRequest
 public class SubmitPracticeRequest
 {
     public long LessonId { get; set; }
+    public long? StudentAssignmentId { get; set; }
     public bool IsExam { get; set; }
     public int DurationSeconds { get; set; }
     public List<SubmitNoteAttemptRequest> Attempts { get; set; } = [];

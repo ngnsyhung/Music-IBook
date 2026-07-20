@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Music-IBook score viewer</title>
+  <script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.9.9/build/opensheetmusicdisplay.min.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; background: #fffaf0; }
+    #score {
+      height: 100%;
+      box-sizing: border-box;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      padding: 12px 8px 24px;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y;
+    }
+    @media (max-width: 600px) {
+      #score { padding: 8px 4px 24px; touch-action: pan-y; }
+      #score svg { display: block; max-width: 100% !important; height: auto !important; }
+    }
+    #status { color: #766e5a; font: 14px system-ui, sans-serif; padding: 24px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div id="score"><div id="status">Đang chuẩn bị khuông nhạc…</div></div>
+  <script>
+    let osmd;
+    let pendingXml;
+
+    function notify(message) {
+      if (window.chrome && window.chrome.webview) {
+        window.chrome.webview.postMessage(message);
+      } else if (window.FlutterOSMD) {
+        window.FlutterOSMD.postMessage(message);
+      }
+    }
+
+    function ensureOsmd() {
+      if (osmd) return true;
+      if (!window.opensheetmusicdisplay) return false;
+      document.getElementById('score').innerHTML = '';
+      osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay('score', {
+        // Flutter owns the WebView/iframe size. Letting OSMD install its own
+        // DOM observer causes errors in embedded browser views and can trigger
+        // unnecessary full-score re-renders while the playhead is moving.
+        autoResize: false,
+        backend: 'svg',
+        drawingParameters: 'default',
+        pageFormat: 'Endless',
+        drawTitle: true,
+        drawSubtitle: true,
+        drawComposer: true,
+        drawLyricist: true,
+        drawPartNames: false,
+        renderSingleHorizontalStaffline: false
+      });
+      return true;
+    }
+
+    async function renderMusicXml(xml) {
+      if (!ensureOsmd()) {
+        pendingXml = xml;
+        return;
+      }
+      try {
+        await osmd.load(xml);
+        osmd.render();
+        if (window.matchMedia('(max-width: 600px)').matches) {
+          document.querySelectorAll('#score svg').forEach(svg => {
+            svg.style.maxWidth = '100%';
+            svg.style.width = '100%';
+            svg.style.height = 'auto';
+          });
+        }
+        notify('RenderComplete');
+      } catch (error) {
+        console.error('OSMD error', error);
+        notify('Error: ' + error);
+      }
+    }
+
+    function setPlayheadBeat(beat, maxBeat) {
+      const score = document.getElementById('score');
+      const safeMaxBeat = Math.max(Number(maxBeat) || 1, 1);
+      const progress = Math.max(0, Math.min(1, ((Number(beat) || 1) - 1) / safeMaxBeat));
+      const scrollRange = Math.max(0, score.scrollHeight - score.clientHeight);
+      const target = progress * scrollRange;
+
+      if (Math.abs(score.scrollTop - target) > 8) {
+        score.scrollTo({ top: target, behavior: 'auto' });
+      }
+    }
+
+    function loadMusicXmlFromBase64(base64Xml) {
+      try {
+        const bytes = Uint8Array.from(atob(base64Xml), char => char.charCodeAt(0));
+        const xml = new TextDecoder('utf-8').decode(bytes);
+        renderMusicXml(xml);
+      } catch (error) {
+        notify('Error: ' + error);
+      }
+    }
+
+    window.addEventListener('message', event => {
+      let message;
+      try {
+        message = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      } catch (_) {
+        return;
+      }
+
+      if (!message || typeof message !== 'object') return;
+      if (message.type === 'score' && typeof message.xml === 'string') {
+        renderMusicXml(message.xml);
+      } else if (message.type === 'playhead') {
+        setPlayheadBeat(message.beat, message.maxBeat);
+      }
+    });
+
+    window.addEventListener('load', () => {
+      if (!ensureOsmd()) {
+        document.getElementById('status').textContent = 'Không thể tải bộ dựng khuông nhạc.';
+        notify('Error: Không thể tải OpenSheetMusicDisplay. Kiểm tra kết nối Internet.');
+        return;
+      }
+      if (pendingXml) renderMusicXml(pendingXml);
+      notify('Ready');
+    });
+  </script>
+</body>
+</html>

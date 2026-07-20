@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../providers/progress_provider.dart';
+import '../../../../utils/vietnam_time.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -15,9 +16,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => context.read<ProgressProvider>().loadStudentsProgress(),
-    );
+    final provider = context.read<ProgressProvider>();
+    Future.microtask(provider.loadStudentsProgress);
   }
 
   @override
@@ -134,6 +134,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               ),
                             ],
                           ),
+                          if (s.lastActivityAt != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Hoạt động gần nhất: ${VietnamTime.format(s.lastActivityAt!)}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
                         ],
                       ),
                     ),

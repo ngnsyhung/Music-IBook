@@ -60,15 +60,27 @@ public class StudentService : IStudentService
             .Where(x => x.LessonId == request.LessonId)
             .ToListAsync();
 
+        StudentAssignment? assignment = null;
+        if (request.StudentAssignmentId.HasValue)
+        {
+            assignment = await db.StudentAssignments.FirstOrDefaultAsync(x =>
+                x.Id == request.StudentAssignmentId.Value &&
+                x.StudentId == studentId &&
+                x.LessonId == request.LessonId);
+            if (assignment == null)
+                throw new ArgumentException("Bài tập bổ sung không thuộc học sinh hoặc bài học hiện tại.");
+        }
+
+        var finishedAtUtc = DateTime.UtcNow;
         var session = new PracticeSession
         {
             StudentId = studentId,
             LessonId = request.LessonId,
             IsExam = request.IsExam,
             DurationSeconds = request.DurationSeconds,
-            StartedAtUtc = DateTime.UtcNow,
-            FinishedAtUtc = DateTime.UtcNow,
-            CreatedAtUtc = DateTime.UtcNow
+            StartedAtUtc = finishedAtUtc.AddSeconds(-Math.Max(0, request.DurationSeconds)),
+            FinishedAtUtc = finishedAtUtc,
+            CreatedAtUtc = finishedAtUtc
         };
 
         db.PracticeSessions.Add(session);
@@ -143,6 +155,9 @@ public class StudentService : IStudentService
         // Điểm tối đa = số nốt * 10, không âm
         session.Score = Math.Max(0, totalScore);
 
+        if (assignment != null)
+            assignment.IsCompleted = true;
+
         await db.SaveChangesAsync();
 
         return session;
@@ -157,4 +172,43 @@ public class StudentService : IStudentService
             .OrderByDescending(x => x.StartedAtUtc)
             .ToListAsync();
     }
+
+    public async Task<List<AssignmentDto>> GetAssignmentsAsync(long studentId, long? lessonId)
+    {
+        var query = db.StudentAssignments
+            .Where(x => x.StudentId == studentId);
+        if (lessonId.HasValue)
+            query = query.Where(x => x.LessonId == lessonId.Value);
+
+        var assignments = await query
+            .OrderBy(x => x.IsCompleted)
+            .ThenBy(x => x.DueAtUtc)
+            .ThenByDescending(x => x.CreatedAtUtc)
+            .Select(x => new AssignmentDto
+            {
+                Id = x.Id,
+                StudentId = x.StudentId,
+                LessonId = x.LessonId,
+                LessonSectionId = x.LessonSectionId,
+                LessonExerciseId = x.LessonExerciseId,
+                SectionTitle = x.Section == null ? null : x.Section.Title,
+                ExerciseTitle = x.Exercise == null ? null : x.Exercise.Title,
+                Message = x.Message,
+                DueAtUtc = x.DueAtUtc,
+                CreatedAtUtc = x.CreatedAtUtc,
+                IsCompleted = x.IsCompleted
+            })
+            .ToListAsync();
+
+        foreach (var assignment in assignments)
+        {
+            assignment.DueAtUtc = AsUtc(assignment.DueAtUtc);
+            assignment.CreatedAtUtc = AsUtc(assignment.CreatedAtUtc)!.Value;
+        }
+        return assignments;
+    }
+
+    private static DateTime? AsUtc(DateTime? value) => value.HasValue
+        ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc)
+        : null;
 }

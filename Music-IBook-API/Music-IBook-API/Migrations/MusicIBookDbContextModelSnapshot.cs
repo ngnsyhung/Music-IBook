@@ -63,6 +63,80 @@ namespace Music_IBook_API.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Music_IBook_API.Models.LessonAnnotation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<double?>("EndBeat")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("LessonId")
+                        .HasColumnType("bigint");
+
+                    b.Property<double>("StartBeat")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId", "StartBeat");
+
+                    b.ToTable("LessonAnnotations");
+                });
+
+            modelBuilder.Entity("Music_IBook_API.Models.LessonExercise", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ConfigJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Instruction")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("LessonId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("LessonSectionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonSectionId");
+
+                    b.HasIndex("LessonId", "SortOrder");
+
+                    b.ToTable("LessonExercises");
+                });
+
             modelBuilder.Entity("Music_IBook_API.Models.LessonNote", b =>
                 {
                     b.Property<long>("Id")
@@ -81,6 +155,10 @@ namespace Music_IBook_API.Migrations
 
                     b.Property<double>("DurationBeat")
                         .HasColumnType("float");
+
+                    b.Property<string>("Fingering")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("LessonId")
                         .HasColumnType("bigint");
@@ -102,6 +180,13 @@ namespace Music_IBook_API.Migrations
                     b.Property<double>("StartBeat")
                         .HasColumnType("float");
 
+                    b.Property<int>("Track")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TrackName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Velocity")
                         .HasColumnType("int");
 
@@ -113,6 +198,49 @@ namespace Music_IBook_API.Migrations
                     b.HasIndex("LessonId");
 
                     b.ToTable("LessonNotes");
+                });
+
+            modelBuilder.Entity("Music_IBook_API.Models.LessonSection", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("DefaultTempo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("EndBeat")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Hand")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("LessonId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<double>("StartBeat")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId", "SortOrder")
+                        .IsUnique();
+
+                    b.ToTable("LessonSections");
                 });
 
             modelBuilder.Entity("Music_IBook_API.Models.MusicLesson", b =>
@@ -147,21 +275,13 @@ namespace Music_IBook_API.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PracticeGuide")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<long>("TeacherId")
                         .HasColumnType("bigint");
 
                     b.Property<int>("Tempo")
                         .HasColumnType("int");
 
-                    b.Property<string>("TheoryContent")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TheoryTitle")
+                    b.Property<string>("TempoMap")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -257,12 +377,12 @@ namespace Music_IBook_API.Migrations
 
                     b.HasIndex("LessonId");
 
-                    b.HasIndex("StudentId");
+                    b.HasIndex("StudentId", "LessonId", "StartedAtUtc");
 
                     b.ToTable("PracticeSessions");
                 });
 
-            modelBuilder.Entity("Music_IBook_API.Models.PracticeSessionDetail", b =>
+            modelBuilder.Entity("Music_IBook_API.Models.StudentAssignment", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -270,33 +390,42 @@ namespace Music_IBook_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("ExpectedNote")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsCorrect")
+                    b.Property<DateTime?>("DueAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsCompleted")
                         .HasColumnType("bit");
 
-                    b.Property<long>("LessonNoteId")
+                    b.Property<long?>("LessonExerciseId")
                         .HasColumnType("bigint");
 
-                    b.Property<long>("PracticeSessionId")
+                    b.Property<long>("LessonId")
                         .HasColumnType("bigint");
 
-                    b.Property<double>("PressedAtSecond")
-                        .HasColumnType("float");
+                    b.Property<long?>("LessonSectionId")
+                        .HasColumnType("bigint");
 
-                    b.Property<string>("PressedNote")
+                    b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("StudentId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LessonNoteId");
+                    b.HasIndex("LessonExerciseId");
 
-                    b.HasIndex("PracticeSessionId");
+                    b.HasIndex("LessonId");
 
-                    b.ToTable("PracticeSessionDetails");
+                    b.HasIndex("LessonSectionId");
+
+                    b.HasIndex("StudentId", "CreatedAtUtc");
+
+                    b.ToTable("StudentAssignments");
                 });
 
             modelBuilder.Entity("Music_IBook_API.Models.StudentLessonProgress", b =>
@@ -392,15 +521,55 @@ namespace Music_IBook_API.Migrations
 
                     b.HasIndex("LessonNoteId");
 
-                    b.HasIndex("PracticeSessionId");
+                    b.HasIndex("PracticeSessionId", "IsCorrect");
 
                     b.ToTable("StudentNoteAttempts");
+                });
+
+            modelBuilder.Entity("Music_IBook_API.Models.LessonAnnotation", b =>
+                {
+                    b.HasOne("Music_IBook_API.Models.MusicLesson", "Lesson")
+                        .WithMany("Annotations")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+                });
+
+            modelBuilder.Entity("Music_IBook_API.Models.LessonExercise", b =>
+                {
+                    b.HasOne("Music_IBook_API.Models.MusicLesson", "Lesson")
+                        .WithMany("Exercises")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Music_IBook_API.Models.LessonSection", "Section")
+                        .WithMany("Exercises")
+                        .HasForeignKey("LessonSectionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Lesson");
+
+                    b.Navigation("Section");
                 });
 
             modelBuilder.Entity("Music_IBook_API.Models.LessonNote", b =>
                 {
                     b.HasOne("Music_IBook_API.Models.MusicLesson", "Lesson")
                         .WithMany("Notes")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+                });
+
+            modelBuilder.Entity("Music_IBook_API.Models.LessonSection", b =>
+                {
+                    b.HasOne("Music_IBook_API.Models.MusicLesson", "Lesson")
+                        .WithMany("Sections")
                         .HasForeignKey("LessonId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -449,23 +618,37 @@ namespace Music_IBook_API.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("Music_IBook_API.Models.PracticeSessionDetail", b =>
+            modelBuilder.Entity("Music_IBook_API.Models.StudentAssignment", b =>
                 {
-                    b.HasOne("Music_IBook_API.Models.LessonNote", "LessonNote")
+                    b.HasOne("Music_IBook_API.Models.LessonExercise", "Exercise")
                         .WithMany()
-                        .HasForeignKey("LessonNoteId")
+                        .HasForeignKey("LessonExerciseId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Music_IBook_API.Models.MusicLesson", "Lesson")
+                        .WithMany()
+                        .HasForeignKey("LessonId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Music_IBook_API.Models.PracticeSession", "PracticeSession")
-                        .WithMany("Details")
-                        .HasForeignKey("PracticeSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("Music_IBook_API.Models.LessonSection", "Section")
+                        .WithMany()
+                        .HasForeignKey("LessonSectionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Music_IBook_API.Models.AppUser", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("LessonNote");
+                    b.Navigation("Exercise");
 
-                    b.Navigation("PracticeSession");
+                    b.Navigation("Lesson");
+
+                    b.Navigation("Section");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("Music_IBook_API.Models.StudentLessonProgress", b =>
@@ -520,15 +703,24 @@ namespace Music_IBook_API.Migrations
                     b.Navigation("StudentNoteAttempts");
                 });
 
+            modelBuilder.Entity("Music_IBook_API.Models.LessonSection", b =>
+                {
+                    b.Navigation("Exercises");
+                });
+
             modelBuilder.Entity("Music_IBook_API.Models.MusicLesson", b =>
                 {
+                    b.Navigation("Annotations");
+
+                    b.Navigation("Exercises");
+
                     b.Navigation("Notes");
+
+                    b.Navigation("Sections");
                 });
 
             modelBuilder.Entity("Music_IBook_API.Models.PracticeSession", b =>
                 {
-                    b.Navigation("Details");
-
                     b.Navigation("NoteAttempts");
                 });
 #pragma warning restore 612, 618

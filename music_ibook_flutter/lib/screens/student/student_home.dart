@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/auth_provider.dart';
 import '../../providers/lesson_provider.dart';
 import '../../widgets/lesson_card.dart';
 
@@ -24,7 +23,8 @@ class _StudentHomeState extends State<StudentHome>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     )..forward();
-    Future.microtask(() => context.read<LessonProvider>().loadLessons());
+    final lessonProvider = context.read<LessonProvider>();
+    Future.microtask(lessonProvider.loadLessons);
   }
 
   @override
@@ -94,6 +94,28 @@ class _StudentHomeState extends State<StudentHome>
                 const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator()),
                 )
+              else if (p.error != null)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.cloud_off_rounded, size: 52),
+                          const SizedBox(height: 12),
+                          Text(p.error!, textAlign: TextAlign.center),
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            onPressed: p.loadLessons,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Thử lại'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
               else if (p.lessons.isEmpty)
                 SliverFillRemaining(child: _buildEmptyState(context, primary))
               else
@@ -112,18 +134,21 @@ class _StudentHomeState extends State<StudentHome>
                       if (crossAxisCount == 1) {
                         return SliverList.builder(
                           itemCount: p.lessons.length,
-                          itemBuilder: (_, i) => _buildLessonItem(context, p.lessons[i], i),
+                          itemBuilder: (_, i) =>
+                              _buildLessonItem(context, p.lessons[i], i),
                         );
                       } else {
                         return SliverGrid(
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            mainAxisExtent: 160,
-                          ),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                mainAxisSpacing: 16,
+                                crossAxisSpacing: 16,
+                                mainAxisExtent: 160,
+                              ),
                           delegate: SliverChildBuilderDelegate(
-                            (_, i) => _buildLessonItem(context, p.lessons[i], i),
+                            (_, i) =>
+                                _buildLessonItem(context, p.lessons[i], i),
                             childCount: p.lessons.length,
                           ),
                         );
