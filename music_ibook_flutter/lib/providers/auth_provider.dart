@@ -5,8 +5,12 @@ import '../core/token_storage.dart';
 import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final _service = AuthService();
-  final _storage = TokenStorage();
+  final AuthService _service;
+  final TokenStorage _storage;
+
+  AuthProvider({AuthService? service, TokenStorage? storage})
+      : _service = service ?? AuthService(),
+        _storage = storage ?? TokenStorage();
 
   bool loading = false;
   String? error;

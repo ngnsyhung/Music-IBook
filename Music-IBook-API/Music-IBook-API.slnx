@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Music-IBook-API/Music-IBook-API.csproj" />
+  <Project Path="Music-IBook-API.Tests/Music-IBook-API.Tests.csproj" />
 </Solution>

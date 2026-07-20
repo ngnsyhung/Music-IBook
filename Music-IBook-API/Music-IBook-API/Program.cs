@@ -129,7 +129,10 @@ using (var scope = app.Services.CreateScope())
     // any query or seed operation. This prevents newly-added notation fields
     // (for example TempoMap and MIDI track metadata) from breaking every
     // lesson query until a migration is applied manually.
-    await db.Database.MigrateAsync();
+    if (db.Database.IsRelational())
+    {
+        await db.Database.MigrateAsync();
+    }
     await DbSeeder.SeedAsync(db);
 }
 
@@ -166,3 +169,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+public partial class Program { }

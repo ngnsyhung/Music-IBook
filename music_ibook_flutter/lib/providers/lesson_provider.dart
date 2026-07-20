@@ -7,7 +7,10 @@ import '../models/lesson_note.dart';
 import '../services/lesson_service.dart';
 
 class LessonProvider extends ChangeNotifier {
-  final _service = LessonService();
+  final LessonService _service;
+
+  LessonProvider({LessonService? service})
+      : _service = service ?? LessonService();
 
   bool loading = false;
   bool teacherLessonsLoading = false;
