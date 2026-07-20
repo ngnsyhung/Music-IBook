@@ -1,0 +1,20 @@
+﻿Thuáº­t ngá»¯
+Äá»‹nh nghÄ©a
+Beat
+Vá»‹ trÃ­ thá»i gian Ã¢m nháº¡c theo phÃ¡ch, Ä‘á»™c láº­p giÃ¢y thá»±c.
+Staff
+KhuÃ´ng nháº¡c; thÆ°á»ng map tay pháº£i/tay trÃ¡i.
+Voice
+DÃ²ng giai Ä‘iá»‡u Ä‘á»™c láº­p trong cÃ¹ng khuÃ´ng.
+MusicXML
+Äá»‹nh dáº¡ng trao Ä‘á»•i kÃ½ Ã¢m dÃ¹ng Ä‘á»ƒ render báº£n nháº¡c.
+OSMD
+OpenSheetMusicDisplay, renderer MusicXML thÃ nh SVG.
+Assignment
+BÃ i bá»• sung giao riÃªng cho má»™t há»c sinh.
+Attempt
+Má»™t káº¿t quáº£ chÆ¡i cá»§a há»c sinh so vá»›i ná»‘t chuáº©n.
+Schema drift
+KhÃ¡c biá»‡t giá»¯a model runtime, snapshot/migration vÃ  database thá»±c.
+15.3 CÆ¡ sá»Ÿ vÃ  giá»›i háº¡n tÃ i liá»‡u
+TÃ i liá»‡u Ä‘Æ°á»£c láº­p tá»« mÃ£ nguá»“n trong workspace táº¡i thá»i Ä‘iá»ƒm baseline. Ná»™i dung 'Ä‘Ã£ triá»ƒn khai' pháº£n Ã¡nh route/service/model hiá»‡n há»¯u, khÃ´ng thay tháº¿ UAT trÃªn mÃ´i trÆ°á»ng production. CÃ¡c Ä‘á» xuáº¥t báº£o máº­t, scale vÃ  váº­n hÃ nh Ä‘Æ°á»£c tÃ¡ch rÃµ khá»i hÃ nh vi as-is.

@@ -1,0 +1,634 @@
+﻿MUSIC IBOOK
+TÃ i liá»‡u ká»¹ thuáº­t vÃ  nghiá»‡p vá»¥
+PhiÃªn báº£n 1.0  |  NgÃ y: 21/06/2026
+1. Giá»›i thiá»‡u dá»± Ã¡n
+1.1. MÃ´ táº£ tá»•ng quan
+Music IBook lÃ  ná»n táº£ng há»c nháº¡c trá»±c tuyáº¿n tÃ­ch há»£p hai vai trÃ²: GiÃ¡o viÃªn vÃ  Há»c sinh. Há»‡ thá»‘ng cho phÃ©p giÃ¡o viÃªn soáº¡n tháº£o bÃ i há»c Ã¢m nháº¡c, bao gá»“m lÃ½ thuyáº¿t, báº£n nháº¡c (khuÃ´ng nháº¡c) vÃ  nháº¡c ná»n; Ä‘á»“ng thá»i cung cáº¥p cho há»c sinh mÃ´i trÆ°á»ng luyá»‡n táº­p vÃ  kiá»ƒm tra cÃ³ tÃ­nh tÆ°Æ¡ng tÃ¡c cao â€” tÃ­ch há»£p piano áº£o Ä‘á»ƒ há»c sinh cÃ³ thá»ƒ Ä‘Ã¡nh ná»‘t trá»±c tiáº¿p vÃ  nháº­n káº¿t quáº£ Ä‘Ã¡nh giÃ¡ ngay láº­p tá»©c.
+1.2. Má»¥c tiÃªu nghiá»‡p vá»¥
+GiÃ¡o viÃªn cÃ³ thá»ƒ táº¡o, chá»‰nh sá»­a vÃ  xuáº¥t báº£n bÃ i há»c Ã¢m nháº¡c gá»“m lÃ½ thuyáº¿t, báº£n nháº¡c (vá»›i cÃ¡c ná»‘t, há»£p Ã¢m, lá»i ca), vÃ  file nháº¡c ná»n.
+Há»c sinh cÃ³ thá»ƒ xem danh sÃ¡ch bÃ i há»c, Ä‘á»c lÃ½ thuyáº¿t, thá»±c hÃ nh qua cháº¿ Ä‘á»™ Luyá»‡n táº­p hoáº·c Kiá»ƒm tra cÃ³ tÃ­nh giá».
+Há»‡ thá»‘ng tá»± Ä‘á»™ng cháº¥m Ä‘iá»ƒm dá»±a trÃªn Ä‘á»™ chÃ­nh xÃ¡c vá» cao Ä‘á»™ (pitch) vÃ  thá»i Ä‘iá»ƒm báº¥m ná»‘t (timing).
+Há»c sinh cÃ³ thá»ƒ xem lá»‹ch sá»­ toÃ n bá»™ láº§n luyá»‡n táº­p / kiá»ƒm tra vá»›i chi tiáº¿t tá»«ng ná»‘t Ä‘Ãºng/sai.
+GiÃ¡o viÃªn cÃ³ thá»ƒ xem bÃ¡o cÃ¡o tá»•ng quan (Dashboard) vÃ  theo dÃµi tiáº¿n Ä‘á»™ há»c táº­p cá»§a tá»«ng há»c sinh.
+1.3. CÃ¡c vai trÃ² ngÆ°á»i dÃ¹ng
+Vai trÃ²
+MÃ´ táº£
+Quyá»n chÃ­nh
+Teacher (GiÃ¡o viÃªn)
+NgÆ°á»i táº¡o vÃ  quáº£n lÃ½ ná»™i dung bÃ i há»c
+CRUD bÃ i há»c, Upload audio, Xem bÃ¡o cÃ¡o há»c sinh
+Student (Há»c sinh)
+NgÆ°á»i há»c vÃ  luyá»‡n táº­p
+Xem bÃ i há»c, Luyá»‡n táº­p, Kiá»ƒm tra, Xem lá»‹ch sá»­
+2. CÃ´ng nghá»‡ sá»­ dá»¥ng
+2.1. Backend â€“ ASP.NET Core Web API
+ThÃ nh pháº§n
+CÃ´ng nghá»‡ / ThÆ° viá»‡n
+PhiÃªn báº£n
+Framework
+ASP.NET Core Web API
+.NET 8
+NgÃ´n ngá»¯
+C#
+12
+ORM
+Entity Framework Core
+8.0.x
+Database
+Microsoft SQL Server
+2019+
+XÃ¡c thá»±c
+JWT Bearer Token
+System.IdentityModel.Tokens.Jwt
+MÃ£ hÃ³a máº­t kháº©u
+BCrypt.Net
+BCrypt.Net-Next
+API Documentation
+Swagger / OpenAPI
+Swashbuckle.AspNetCore
+CORS
+Built-in ASP.NET Core CORS
+â€“
+Static Files
+ASP.NET Static File Middleware
+â€“ (lÆ°u audio trÃªn server)
+Kiáº¿n trÃºc
+Repository Pattern + Service Layer
+â€“
+2.2. Frontend â€“ Flutter Mobile & Web
+ThÃ nh pháº§n
+ThÆ° viá»‡n / Package
+PhiÃªn báº£n
+Framework
+Flutter
+SDK ^3.11.5
+NgÃ´n ngá»¯
+Dart
+3.x
+HTTP Client
+Dio
+^5.7.0
+State Management
+Provider
+^6.1.2
+Navigation
+go_router
+^14.2.7
+Secure Storage
+flutter_secure_storage
+^9.2.2
+File Picker
+file_picker
+^8.1.2
+Audio Player
+audioplayers
+^6.1.0
+UI Framework
+Material Design 3
+Built-in Flutter
+3. Kiáº¿n trÃºc há»‡ thá»‘ng
+3.1. Tá»•ng quan kiáº¿n trÃºc
+Há»‡ thá»‘ng Ä‘Æ°á»£c thiáº¿t káº¿ theo mÃ´ hÃ¬nh Clientâ€“Server. Flutter app giao tiáº¿p vá»›i ASP.NET Core API qua REST API (JSON). JWT token Ä‘Æ°á»£c lÆ°u an toÃ n trÃªn thiáº¿t bá»‹ client báº±ng flutter_secure_storage.
+Luá»“ng dá»¯ liá»‡u tá»•ng quan:
+Flutter App  â”€â”€[HTTP/HTTPS + JWT]â”€â”€â–º  ASP.NET Core API  â”€â”€[EF Core]â”€â”€â–º  SQL Server
+                                        â”œâ”€â”€ AuthController
+                                        â”œâ”€â”€ LessonsController
+                                        â”œâ”€â”€ StudentController
+                                        â””â”€â”€ TeacherController
+3.2. Cáº¥u trÃºc project Backend (Music-IBook-API)
+ThÆ° má»¥c / File
+MÃ´ táº£
+Controllers/
+Xá»­ lÃ½ HTTP request, gá»i Service tÆ°Æ¡ng á»©ng
+Controllers/AuthController.cs
+ÄÄƒng kÃ½, Ä‘Äƒng nháº­p, quÃªn/Ä‘áº·t láº¡i máº­t kháº©u
+Controllers/LessonsController.cs
+CRUD bÃ i há»c, quáº£n lÃ½ ná»‘t nháº¡c, upload audio
+Controllers/StudentController.cs
+LÆ°u tiáº¿n Ä‘á»™, ná»™p bÃ i, xem lá»‹ch sá»­ há»c sinh
+Controllers/TeacherController.cs
+Dashboard, xem tiáº¿n Ä‘á»™ há»c sinh
+Services/
+Business logic, tÃ¡ch biá»‡t khá»i Controller
+Services/AuthService.cs
+Logic Ä‘Äƒng kÃ½, Ä‘Äƒng nháº­p, JWT, máº­t kháº©u
+Services/LessonService.cs
+Táº¡o/sá»­a/xÃ³a bÃ i há»c, upload audio, lÆ°u ná»™i dung
+Services/StudentService.cs
+Logic lÆ°u tiáº¿n Ä‘á»™, cháº¥m Ä‘iá»ƒm, láº¥y lá»‹ch sá»­
+Services/TeacherService.cs
+Tá»•ng há»£p thá»‘ng kÃª Dashboard, tiáº¿n Ä‘á»™ há»c sinh
+Models/
+Entity Framework Core entities (Ã¡nh xáº¡ vá»›i DB)
+DTOs/
+Request/Response objects (khÃ´ng pháº£i entity)
+Repositories/
+Generic Repository Pattern (IRepository<T>)
+Helpers/JwtHelper.cs
+Táº¡o vÃ  xÃ¡c thá»±c JWT Token
+Migrations/
+EF Core migration history
+Program.cs
+Cáº¥u hÃ¬nh DI, Authentication, CORS, Middleware
+appsettings.json
+Connection string, JWT config
+3.3. Cáº¥u trÃºc project Frontend (music_ibook_flutter/lib)
+ThÆ° má»¥c / File
+MÃ´ táº£
+core/app_router.dart
+Äá»‹nh nghÄ©a toÃ n bá»™ routes (GoRouter)
+core/api_client.dart
+Cáº¥u hÃ¬nh Dio (base URL, interceptor JWT)
+models/
+Dart model classes (Ã¡nh xáº¡ JSON response)
+models/lesson.dart
+MusicLesson model
+models/lesson_note.dart
+LessonNote model
+models/practice.dart
+PracticeSession + NoteAttemptRequest
+models/student_note_attempt.dart
+StudentNoteAttempt model
+models/progress.dart
+StudentProgress model
+providers/
+ChangeNotifier providers (state management)
+providers/auth_provider.dart
+Tráº¡ng thÃ¡i Ä‘Äƒng nháº­p, role, logout
+providers/lesson_provider.dart
+Danh sÃ¡ch vÃ  chi tiáº¿t bÃ i há»c
+providers/student_provider.dart
+Submit practice, lÆ°u tiáº¿n Ä‘á»™
+providers/history_provider.dart
+Lá»‹ch sá»­ luyá»‡n táº­p / kiá»ƒm tra
+providers/progress_provider.dart
+Tiáº¿n Ä‘á»™ há»c sinh (dÃ nh cho GiÃ¡o viÃªn)
+services/
+Gá»i API qua Dio
+services/auth_service.dart
+Auth APIs
+services/lesson_service.dart
+Lesson APIs
+services/student_service.dart
+Student APIs
+services/history_service.dart
+Practice history API
+services/teacher_service.dart
+Teacher dashboard & progress APIs
+services/progress_service.dart
+Teacher student progress APIs
+screens/auth/
+Login, Register, Forgot/Reset password
+screens/student/student_home.dart
+MÃ n hÃ¬nh chÃ­nh há»c sinh â€“ danh sÃ¡ch bÃ i
+screens/student/lesson_detail_screen.dart
+Chi tiáº¿t bÃ i há»c + chá»n Luyá»‡n táº­p / Kiá»ƒm tra
+screens/student/practice/practice_screen.dart
+MÃ n hÃ¬nh luyá»‡n táº­p cÃ³ Ä‘áº¿m ngÆ°á»£c
+screens/student/exam/exam_screen.dart
+MÃ n hÃ¬nh kiá»ƒm tra cÃ³ Ä‘á»“ng há»“ báº¥m giá»
+screens/student/history/history_screen.dart
+Lá»‹ch sá»­ vá»›i chi tiáº¿t tá»«ng ná»‘t
+screens/teacher/teacher_dashboard.dart
+Dashboard giÃ¡o viÃªn (3-tab bottom nav)
+screens/teacher/lesson_editor_screen.dart
+Soáº¡n tháº£o bÃ i há»c Ä‘áº§y Ä‘á»§
+screens/teacher/dashboard/dashboard_screen.dart
+Tá»•ng quan thá»‘ng kÃª há»‡ thá»‘ng
+screens/teacher/progress/progress_screen.dart
+Danh sÃ¡ch há»c sinh + tiáº¿n Ä‘á»™
+screens/teacher/progress/student_detail_screen.dart
+Chi tiáº¿t tiáº¿n Ä‘á»™ tá»«ng há»c sinh
+widgets/music_staff.dart
+KhuÃ´ng nháº¡c váº½ báº±ng CustomPainter (highlight ná»‘t)
+widgets/piano_keyboard.dart
+BÃ n phÃ­m piano áº£o tÆ°Æ¡ng tÃ¡c
+4. Thiáº¿t káº¿ cÆ¡ sá»Ÿ dá»¯ liá»‡u (SQL Server)
+4.1. SÆ¡ Ä‘á»“ quan há»‡ (ERD â€“ mÃ´ táº£ vÄƒn báº£n)
+Database gá»“m 8 báº£ng chÃ­nh vá»›i quan há»‡ theo sÆ¡ Ä‘á»“ sau:
+AppUsers
+  â”œâ”€â”€ 1â”€â”€Nâ”€â”€â–º MusicLessons        (TeacherId FK, Restrict)
+  â””â”€â”€ 1â”€â”€Nâ”€â”€â–º StudentLessonProgresses (StudentId FK, Restrict)
+
+MusicLessons
+  â””â”€â”€ 1â”€â”€Nâ”€â”€â–º LessonNotes          (LessonId FK, Cascade)
+
+LessonNotes
+  â””â”€â”€ 1â”€â”€Nâ”€â”€â–º StudentNoteAttempts  (LessonNoteId FK, Restrict)
+
+PracticeSessions
+  â”œâ”€â”€ 1â”€â”€Nâ”€â”€â–º StudentNoteAttempts  (PracticeSessionId FK, Cascade)
+  â””â”€â”€ 1â”€â”€Nâ”€â”€â–º PracticeSessionDetails (PracticeSessionId FK, Cascade)
+4.2. Chi tiáº¿t cÃ¡c báº£ng
+Báº£ng: AppUsers
+Cá»™t
+Kiá»ƒu dá»¯ liá»‡u
+RÃ ng buá»™c
+MÃ´ táº£
+Id
+bigint
+PK, Identity
+KhÃ³a chÃ­nh
+FullName
+nvarchar(max)
+NOT NULL
+Há» vÃ  tÃªn Ä‘áº§y Ä‘á»§
+Email
+nvarchar(max)
+UNIQUE, NOT NULL
+Email (dÃ¹ng Ä‘á»ƒ Ä‘Äƒng nháº­p)
+PasswordHash
+nvarchar(max)
+NOT NULL
+Máº­t kháº©u Ä‘Ã£ Ä‘Æ°á»£c BCrypt hash
+Role
+nvarchar(max)
+DEFAULT "Student"
+"Teacher" hoáº·c "Student"
+CreatedAtUtc
+datetime2
+NOT NULL
+Thá»i Ä‘iá»ƒm táº¡o tÃ i khoáº£n (UTC)
+Báº£ng: MusicLessons
+Cá»™t
+Kiá»ƒu dá»¯ liá»‡u
+RÃ ng buá»™c
+MÃ´ táº£
+Id
+bigint
+PK, Identity
+KhÃ³a chÃ­nh
+TeacherId
+bigint
+FK â†’ AppUsers, Restrict
+GiÃ¡o viÃªn táº¡o bÃ i
+Title
+nvarchar(max)
+NOT NULL
+TÃªn bÃ i há»c
+Composer
+nvarchar(max)
+
+TÃªn nháº¡c sÄ© sÃ¡ng tÃ¡c
+Clef
+nvarchar(max)
+DEFAULT "treble"
+KhÃ³a nháº¡c (treble/bass)
+KeySignature
+nvarchar(max)
+DEFAULT "D Major"
+Giá»ng nháº¡c
+TimeSignature
+nvarchar(max)
+DEFAULT "2/4"
+Nhá»‹p nháº¡c
+TheoryTitle
+nvarchar(max)
+
+TiÃªu Ä‘á» pháº§n lÃ½ thuyáº¿t
+TheoryContent
+nvarchar(max)
+
+Ná»™i dung lÃ½ thuyáº¿t (text)
+PracticeGuide
+nvarchar(max)
+
+HÆ°á»›ng dáº«n luyá»‡n táº­p
+AudioUrl
+nvarchar(max)
+NULL
+ÄÆ°á»ng dáº«n file nháº¡c ná»n
+AudioFileName
+nvarchar(max)
+NULL
+TÃªn gá»‘c file audio
+IsPublished
+bit
+DEFAULT 0
+ÄÃ£ xuáº¥t báº£n chÆ°a
+CreatedAtUtc
+datetime2
+NOT NULL
+Thá»i Ä‘iá»ƒm táº¡o (UTC)
+Báº£ng: LessonNotes
+Cá»™t
+Kiá»ƒu dá»¯ liá»‡u
+RÃ ng buá»™c
+MÃ´ táº£
+Id
+bigint
+PK, Identity
+KhÃ³a chÃ­nh
+LessonId
+bigint
+FK â†’ MusicLessons, Cascade
+BÃ i há»c chá»©a ná»‘t nÃ y
+Second
+float
+NOT NULL
+Thá»i Ä‘iá»ƒm ná»‘t xuáº¥t hiá»‡n (giÃ¢y)
+Note
+nvarchar(max)
+NOT NULL
+KÃ½ hiá»‡u ná»‘t (C4, D4, F#4...)
+Duration
+nvarchar(max)
+NOT NULL
+Äá»™ dÃ i ná»‘t (eighth/quarter/half)
+Lyric
+nvarchar(max)
+
+Lá»i ca tÆ°Æ¡ng á»©ng vá»›i ná»‘t
+Chord
+nvarchar(max)
+
+Há»£p Ã¢m Ä‘á»‡m (Am, G, C...)
+Báº£ng: StudentLessonProgresses
+Cá»™t
+Kiá»ƒu dá»¯ liá»‡u
+RÃ ng buá»™c
+MÃ´ táº£
+Id
+bigint
+PK, Identity
+KhÃ³a chÃ­nh
+StudentId
+bigint
+FK â†’ AppUsers, Restrict
+Há»c sinh
+LessonId
+bigint
+FK â†’ MusicLessons
+BÃ i há»c
+LastPositionSecond
+float
+
+Vá»‹ trÃ­ dá»«ng há»c láº§n cuá»‘i (giÃ¢y)
+CompletedNoteCount
+int
+
+Sá»‘ ná»‘t Ä‘Ã£ hoÃ n thÃ nh
+BestScore
+int
+
+Äiá»ƒm cao nháº¥t Ä‘áº¡t Ä‘Æ°á»£c
+TotalAttempts
+int
+
+Tá»•ng sá»‘ láº§n luyá»‡n táº­p
+IsCompleted
+bit
+DEFAULT 0
+ÄÃ£ hoÃ n thÃ nh bÃ i há»c
+LastStudiedAtUtc
+datetime2
+NOT NULL
+Láº§n há»c gáº§n nháº¥t
+Báº£ng: PracticeSessions
+Cá»™t
+Kiá»ƒu dá»¯ liá»‡u
+RÃ ng buá»™c
+MÃ´ táº£
+Id
+bigint
+PK, Identity
+KhÃ³a chÃ­nh
+StudentId
+bigint
+FK â†’ AppUsers
+Há»c sinh thá»±c hiá»‡n
+LessonId
+bigint
+FK â†’ MusicLessons
+BÃ i há»c
+IsExam
+bit
+DEFAULT 0
+true = Kiá»ƒm tra, false = Luyá»‡n táº­p
+Score
+int
+NOT NULL
+Äiá»ƒm sá»‘ (0â€“100)
+CorrectCount
+int
+NOT NULL
+Sá»‘ ná»‘t Ä‘Ã¡nh Ä‘Ãºng
+WrongCount
+int
+NOT NULL
+Sá»‘ ná»‘t Ä‘Ã¡nh sai
+Accuracy
+float
+NOT NULL
+Tá»· lá»‡ chÃ­nh xÃ¡c (%)
+DurationSeconds
+int
+NOT NULL
+Thá»i gian lÃ m bÃ i (giÃ¢y)
+StartedAtUtc
+datetime2
+NOT NULL
+Thá»i Ä‘iá»ƒm báº¯t Ä‘áº§u
+FinishedAtUtc
+datetime2
+NULL
+Thá»i Ä‘iá»ƒm káº¿t thÃºc
+CreatedAtUtc
+datetime2
+NOT NULL
+Thá»i Ä‘iá»ƒm táº¡o record
+Báº£ng: StudentNoteAttempts
+Cá»™t
+Kiá»ƒu dá»¯ liá»‡u
+RÃ ng buá»™c
+MÃ´ táº£
+Id
+bigint
+PK, Identity
+KhÃ³a chÃ­nh
+PracticeSessionId
+bigint
+FK â†’ PracticeSessions, Cascade
+Session chá»©a attempt nÃ y
+LessonNoteId
+bigint
+FK â†’ LessonNotes, Restrict
+Ná»‘t nháº¡c yÃªu cáº§u
+ExpectedNote
+nvarchar(max)
+NOT NULL
+Ná»‘t há»‡ thá»‘ng yÃªu cáº§u (C4, D4...)
+PlayedNote
+nvarchar(max)
+NOT NULL
+Ná»‘t há»c sinh Ä‘Ã£ Ä‘Ã¡nh
+ExpectedAtSecond
+float
+NOT NULL
+Thá»i Ä‘iá»ƒm yÃªu cáº§u báº¥m (giÃ¢y)
+PlayedAtSecond
+float
+NOT NULL
+Thá»i Ä‘iá»ƒm há»c sinh báº¥m (giÃ¢y)
+TimingErrorMs
+float
+NOT NULL
+Äá»™ lá»‡ch thá»i gian (milliseconds)
+IsCorrectPitch
+bit
+NOT NULL
+ÄÃºng cao Ä‘á»™ khÃ´ng?
+IsCorrectTiming
+bit
+NOT NULL
+ÄÃºng thá»i Ä‘iá»ƒm khÃ´ng? (â‰¤ 300ms)
+IsCorrect
+bit
+NOT NULL
+ÄÃºng cáº£ cao Ä‘á»™ láº«n thá»i Ä‘iá»ƒm
+CreatedAtUtc
+datetime2
+NOT NULL
+Thá»i Ä‘iá»ƒm táº¡o
+5. Quy trÃ¬nh nghiá»‡p vá»¥ chÃ­nh
+5.1. Luá»“ng GiÃ¡o viÃªn táº¡o bÃ i há»c
+BÆ°á»›c
+HÃ nh Ä‘á»™ng
+API Ä‘Æ°á»£c gá»i
+1
+ÄÄƒng nháº­p há»‡ thá»‘ng
+POST /api/auth/login
+2
+Táº¡o bÃ i há»c má»›i (tiÃªu Ä‘á», giá»ng, nhá»‹p...)
+POST /api/lessons
+3
+Soáº¡n ná»™i dung lÃ½ thuyáº¿t vÃ  hÆ°á»›ng dáº«n
+PUT /api/lessons/{id}
+4
+Upload file Ã¢m thanh ná»n
+POST /api/lessons/{id}/audio
+5
+ThÃªm ná»‘t nháº¡c vÃ o báº£n nháº¡c
+POST /api/lessons/{id}/notes
+6
+LÆ°u toÃ n bá»™ ná»™i dung báº£n nháº¡c (upsert)
+POST /api/lessons/{id}/content
+7
+Xuáº¥t báº£n bÃ i há»c
+PUT /api/lessons/{id}/publish
+5.2. Luá»“ng Há»c sinh Luyá»‡n táº­p
+BÆ°á»›c
+HÃ nh Ä‘á»™ng
+MÃ´ táº£
+1
+Xem danh sÃ¡ch bÃ i há»c
+GET /api/lessons
+2
+Má»Ÿ chi tiáº¿t bÃ i há»c
+GET /api/lessons/{id}
+3
+Báº¥m "Luyá»‡n táº­p"
+VÃ o PracticeScreen
+4
+Báº¥m START
+Timer báº¯t Ä‘áº§u, hiá»ƒn thá»‹ ná»‘t Ä‘áº§u tiÃªn trÃªn khuÃ´ng nháº¡c (mÃ u cam)
+5
+ÄÃ¡nh ná»‘t trÃªn piano áº£o
+So sÃ¡nh ná»‘t há»c sinh Ä‘Ã¡nh vs ná»‘t yÃªu cáº§u (chá»‰ cao Ä‘á»™)
+6
+Tiáº¿p tá»¥c Ä‘áº¿n háº¿t bÃ i
+Má»—i ná»‘t Ä‘Ãºng â†’ next, ná»‘t sai â†’ Ä‘Ã¡nh láº¡i
+7
+Ná»™p káº¿t quáº£
+POST /api/student/practice (isExam=false)
+5.3. Luá»“ng Há»c sinh Kiá»ƒm tra
+BÆ°á»›c
+HÃ nh Ä‘á»™ng
+MÃ´ táº£
+1
+Báº¥m "Kiá»ƒm tra" tá»« mÃ n hÃ¬nh chi tiáº¿t bÃ i
+VÃ o ExamScreen
+2
+Báº¥m START
+Äá»“ng há»“ báº¯t Ä‘áº§u Ä‘áº¿m giá»
+3
+ÄÃ¡nh ná»‘t trÃªn piano áº£o (khÃ´ng cÃ³ gá»£i Ã½ mÃ u)
+Kiá»ƒm tra cáº£ cao Ä‘á»™ láº«n thá»i Ä‘iá»ƒm báº¥m (â‰¤300ms)
+4
+Ná»‘t bá» qua (>300ms)
+Há»‡ thá»‘ng tá»± Ä‘á»™ng tÃ­nh sai, chuyá»ƒn sang ná»‘t tiáº¿p theo
+5
+Háº¿t bÃ i
+Tá»± Ä‘á»™ng káº¿t thÃºc vÃ  ná»™p
+6
+Xem káº¿t quáº£
+Dialog hiá»ƒn thá»‹ Ä‘iá»ƒm, sá»‘ Ä‘Ãºng/sai, xáº¿p loáº¡i
+7
+Ná»™p káº¿t quáº£
+POST /api/student/practice (isExam=true)
+5.4. Luá»“ng GiÃ¡o viÃªn xem bÃ¡o cÃ¡o
+BÆ°á»›c
+HÃ nh Ä‘á»™ng
+API Ä‘Æ°á»£c gá»i
+1
+VÃ o tab Tá»•ng quan trong Dashboard
+GET /api/teacher/dashboard
+2
+VÃ o tab Há»c sinh
+GET /api/teacher/students-progress
+3
+Báº¥m vÃ o má»™t há»c sinh cá»¥ thá»ƒ
+GET /api/teacher/students/{id}/progress
+6. Báº£o máº­t
+Máº­t kháº©u Ä‘Æ°á»£c hash báº±ng BCrypt trÆ°á»›c khi lÆ°u vÃ o database.
+XÃ¡c thá»±c sá»­ dá»¥ng JWT Bearer Token vá»›i thá»i háº¡n (expiry) cáº¥u hÃ¬nh trong appsettings.json.
+Token Ä‘Æ°á»£c lÆ°u trÃªn thiáº¿t bá»‹ client báº±ng flutter_secure_storage (khÃ´ng lÆ°u trÃªn SharedPreferences thÃ´ng thÆ°á»ng).
+Authorization phÃ¢n quyá»n theo Role ("Teacher"/"Student") thÃ´ng qua [Authorize(Roles = "...")].
+CORS Ä‘Æ°á»£c cáº¥u hÃ¬nh cho phÃ©p Flutter app káº¿t ná»‘i (AllowAnyOrigin trong mÃ´i trÆ°á»ng dev).
+7. Cáº¥u hÃ¬nh vÃ  triá»ƒn khai
+7.1. Backend
+File appsettings.json cáº§n cáº¥u hÃ¬nh:
+Key
+MÃ´ táº£
+VÃ­ dá»¥
+ConnectionStrings:DB
+Chuá»—i káº¿t ná»‘i SQL Server
+Server=.;Database=MusicIBook;...
+Jwt:Key
+Secret key kÃ½ JWT (â‰¥ 32 kÃ½ tá»±)
+music-ibook-super-secret-key-2026
+Jwt:Issuer
+Issuer cá»§a JWT
+MusicIBookAPI
+Jwt:Audience
+Audience cá»§a JWT
+MusicIBookClient
+7.2. Frontend
+Cáº¥u hÃ¬nh base URL cá»§a API trong lib/core/api_client.dart.
+Cháº¡y dev: flutter run -d chrome (Web) hoáº·c flutter run -d android (Android).
+Build: flutter build apk --release hoáº·c flutter build web --release.
+8. Thuáº­t toÃ¡n cháº¥m Ä‘iá»ƒm
+8.1. Luyá»‡n táº­p (isExam = false)
+Chá»‰ kiá»ƒm tra cao Ä‘á»™ (pitch): Ná»‘t Ä‘Ã¡nh Ä‘Ãºng thÃ¬ IsCorrectPitch = true.
+Há»c sinh Ä‘Ã¡nh sai khÃ´ng bá»‹ trá»« Ä‘iá»ƒm â€“ chá»‰ cáº§n Ä‘Ã¡nh Ä‘Ãºng má»›i chuyá»ƒn sang ná»‘t tiáº¿p theo.
+Score = (correctCount / totalNotes) Ã— 100.
+8.2. Kiá»ƒm tra (isExam = true)
+Kiá»ƒm tra cáº£ cao Ä‘á»™ (pitch) vÃ  thá»i Ä‘iá»ƒm (timing).
+TimingErrorMs = |playedAtSecond - expectedAtSecond| Ã— 1000.
+IsCorrectTiming = TimingErrorMs â‰¤ 300 (ms).
+IsCorrect = IsCorrectPitch AND IsCorrectTiming.
+Náº¿u há»c sinh khÃ´ng báº¥m trong 300ms â†’ há»‡ thá»‘ng tá»± Ä‘Ã¡nh dáº¥u sai (playedNote = rá»—ng).
+Score = (correctCount / totalNotes) Ã— 100.
+8.3. Xáº¿p loáº¡i
+Äiá»ƒm
+Xáº¿p loáº¡i
+90 â€“ 100
+Xuáº¥t sáº¯c
+80 â€“ 89
+Tá»‘t
+65 â€“ 79
+KhÃ¡
+50 â€“ 64
+Trung bÃ¬nh
+< 50
+Cáº§n luyá»‡n thÃªm
